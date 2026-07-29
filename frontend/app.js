@@ -1,320 +1,327 @@
-// Model Substitution Governance Tracker - Enterprise Dashboard JS
+document.addEventListener('DOMContentLoaded', () => {
+    const API_BASE = '/api/v1';
 
-const API_BASE = window.location.origin;
+    // State Variables
+    let eventsData = [];
+    let modelsData = [];
+    let agentsData = [];
 
-let allEvents = [];
-let allAgents = [];
-let allModels = [];
+    // DOM Elements
+    const eventsTbody = document.getElementById('events-tbody');
+    const modelsTbody = document.getElementById('models-tbody');
+    const agentsTbody = document.getElementById('agents-tbody');
+    const auditContainer = document.getElementById('audit-results-container');
 
-document.addEventListener("DOMContentLoaded", () => {
-    initTabs();
-    initEventListeners();
-    loadDashboardData();
-});
+    const kpiTotal = document.getElementById('kpi-total');
+    const kpiHighRisk = document.getElementById('kpi-high-risk');
+    const kpiViolations = document.getElementById('kpi-violations');
+    const kpiModelsCount = document.getElementById('kpi-models-count');
 
-function initTabs() {
-    const tabBtns = document.querySelectorAll(".tab-btn");
-    tabBtns.forEach(btn => {
-        btn.addEventListener("click", () => {
-            tabBtns.forEach(b => b.classList.remove("active"));
-            document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-            
-            btn.classList.add("active");
-            const target = btn.getAttribute("data-tab");
-            document.getElementById(target).classList.add("active");
+    const filterAgent = document.getElementById('filter-agent');
+    const filterReason = document.getElementById('filter-reason');
+    const filterRisk = document.getElementById('filter-risk');
+    const filterCompliance = document.getElementById('filter-compliance');
+    const searchModels = document.getElementById('search-models');
 
-            if (target === "tab-audit") loadAuditSummary();
-            if (target === "tab-agents") loadAgentPolicies();
-            if (target === "tab-models") loadModelProfiles();
+    const btnRefresh = document.getElementById('btn-refresh');
+    const btnOpenSim = document.getElementById('btn-open-sim');
+    const btnRunAudit = document.getElementById('btn-run-audit');
+
+    const eventModal = document.getElementById('event-modal');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+    const modalContent = document.getElementById('modal-content');
+
+    // Tab Navigation
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.tab).classList.add('active');
         });
     });
-}
 
-function initEventListeners() {
-    document.getElementById("btn-refresh").addEventListener("click", loadDashboardData);
-    
-    // Filters
-    document.getElementById("filter-agent").addEventListener("change", applyFilters);
-    document.getElementById("filter-reason").addEventListener("change", applyFilters);
-    document.getElementById("filter-risk").addEventListener("change", applyFilters);
-    document.getElementById("filter-flagged").addEventListener("change", applyFilters);
-    document.getElementById("filter-search").addEventListener("input", applyFilters);
+    // Modal Close handlers
+    modalCloseBtn.addEventListener('click', () => eventModal.classList.remove('active'));
+    eventModal.addEventListener('click', (e) => {
+        if (e.target === eventModal) eventModal.classList.remove('active');
+    });
 
-    // Modals
-    document.getElementById("modal-close").addEventListener("click", () => {
-        document.getElementById("event-modal").classList.remove("active");
-    });
-    document.getElementById("sim-close").addEventListener("click", () => {
-        document.getElementById("sim-modal").classList.remove("active");
-    });
-    document.getElementById("btn-open-sim").addEventListener("click", () => {
-        document.getElementById("sim-modal").classList.add("active");
-    });
-}
+    // Refresh Data
+    btnRefresh.addEventListener('click', loadAllData);
+    btnOpenSim.addEventListener('click', async () => {
+        btnOpenSim.innerText = '⚡ Simulating...';
+        try {
+            // Trigger sample substitutions via synthetic calls for testing
+            const testPayloads = [
+                { requested_model: "GPT-4", actual_model: "GPT-4o Mini", reason: "cost", agent_id: "HR-Agent", session_id: "sim-" + Math.floor(Math.random() * 10000) },
+                { requested_model: "Claude Opus 4", actual_model: "Gemini 1.5 Flash", reason: "availability", agent_id: "Finance-Bot", session_id: "sim-" + Math.floor(Math.random() * 10000) },
+                { requested_model: "GPT-5", actual_model: "GPT-3.5 Turbo", reason: "cost", agent_id: "HR-Agent", session_id: "sim-" + Math.floor(Math.random() * 10000) }
+            ];
 
-async function loadDashboardData() {
-    try {
-        const [eventsRes, agentsRes] = await Promise.all([
-            fetch(`${API_BASE}/events?limit=200`),
-            fetch(`${API_BASE}/agents`)
+            for (const p of testPayloads) {
+                await fetch(`${API_BASE}/events`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(p)
+                });
+            }
+            await loadAllData();
+        } catch (e) {
+            console.error('Simulator error:', e);
+        } finally {
+            btnOpenSim.innerText = '⚡ Gateway Simulator';
+        }
+    });
+
+    // Run Retroactive Audit Button
+    btnRunAudit.addEventListener('click', loadAuditReport);
+
+    // Filter Listeners
+    [filterAgent, filterReason, filterRisk, filterCompliance].forEach(elem => {
+        elem.addEventListener('change', renderEventsTable);
+    });
+
+    if (searchModels) {
+        searchModels.addEventListener('input', renderModelsTable);
+    }
+
+    // Initial Load
+    loadAllData();
+
+    async function loadAllData() {
+        await Promise.all([
+            fetchEvents(),
+            fetchModels(),
+            fetchAgents()
         ]);
-
-        if (eventsRes.ok) {
-            allEvents = await eventsRes.json();
-            updateKPIs(allEvents);
-            applyFilters();
-        }
-
-        if (agentsRes.ok) {
-            allAgents = await agentsRes.json();
-            populateAgentFilter(allAgents);
-        }
-
-        document.getElementById("api-status").innerHTML = `<span class="status-dot green"></span> API Connected`;
-    } catch (err) {
-        console.error("Error loading dashboard data:", err);
-        document.getElementById("api-status").innerHTML = `<span class="status-dot red"></span> Disconnected`;
-    }
-}
-
-function updateKPIs(events) {
-    const total = events.length;
-    const violations = events.filter(e => e.compliance_flagged).length;
-    const highRisk = events.filter(e => e.risk_level === "High" || e.risk_level === "Critical").length;
-    const uniqueAgents = new Set(events.map(e => e.agent_id)).size;
-
-    document.getElementById("kpi-total").innerText = total;
-    document.getElementById("kpi-violations").innerText = violations;
-    const rate = total > 0 ? ((violations / total) * 100).toFixed(1) : "0";
-    document.getElementById("kpi-violation-rate").innerText = `${rate}% Exposure Rate`;
-    
-    document.getElementById("kpi-high-risk").innerText = highRisk;
-    document.getElementById("kpi-agents").innerText = uniqueAgents;
-}
-
-function populateAgentFilter(agents) {
-    const select = document.getElementById("filter-agent");
-    const current = select.value;
-    select.innerHTML = `<option value="">All Agents</option>`;
-    agents.forEach(a => {
-        const opt = document.createElement("option");
-        opt.value = a.agent_id;
-        opt.textContent = a.agent_name || a.agent_id;
-        select.appendChild(opt);
-    });
-    select.value = current;
-}
-
-function applyFilters() {
-    const agent = document.getElementById("filter-agent").value;
-    const reason = document.getElementById("filter-reason").value;
-    const risk = document.getElementById("filter-risk").value;
-    const flaggedOnly = document.getElementById("filter-flagged").checked;
-    const search = document.getElementById("filter-search").value.toLowerCase().trim();
-
-    let filtered = allEvents.filter(e => {
-        if (agent && e.agent_id !== agent) return false;
-        if (reason && e.reason !== reason) return false;
-        if (risk && e.risk_level !== risk) return false;
-        if (flaggedOnly && !e.compliance_flagged) return false;
-        if (search) {
-            const haystack = `${e.requested_model} ${e.actual_model} ${e.agent_id} ${e.session_id}`.toLowerCase();
-            if (!haystack.includes(search)) return false;
-        }
-        return true;
-    });
-
-    renderEventsTable(filtered);
-}
-
-function renderEventsTable(events) {
-    const tbody = document.getElementById("events-tbody");
-    if (events.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 2rem; color: #9ca3af;">No governance events match criteria.</td></tr>`;
-        return;
+        updateKPIs();
+        renderEventsTable();
+        renderModelsTable();
+        renderAgentsTable();
+        populateAgentFilter();
     }
 
-    tbody.innerHTML = events.map(e => {
-        const timeStr = new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const complianceBadge = e.compliance_flagged 
-            ? `<span class="badge badge-violation">⚠️ VIOLATION</span>`
-            : `<span class="badge badge-compliant">✓ COMPLIANT</span>`;
+    async function fetchEvents() {
+        try {
+            const res = await fetch(`${API_BASE}/events?limit=200`);
+            if (res.ok) {
+                eventsData = await res.json();
+            }
+        } catch (err) {
+            console.error('Error fetching events:', err);
+        }
+    }
 
-        return `
+    async function fetchModels() {
+        try {
+            const res = await fetch(`${API_BASE}/models`);
+            if (res.ok) {
+                modelsData = await res.json();
+            }
+        } catch (err) {
+            console.error('Error fetching models:', err);
+        }
+    }
+
+    async function fetchAgents() {
+        try {
+            const res = await fetch(`${API_BASE}/agents`);
+            if (res.ok) {
+                agentsData = await res.json();
+            }
+        } catch (err) {
+            console.error('Error fetching agents:', err);
+        }
+    }
+
+    function updateKPIs() {
+        kpiTotal.innerText = eventsData.length;
+        const highRiskCount = eventsData.filter(e => e.risk_level === 'High' || e.risk_level === 'Critical').length;
+        kpiHighRisk.innerText = highRiskCount;
+        const violationsCount = eventsData.filter(e => e.compliance_flagged).length;
+        kpiViolations.innerText = violationsCount;
+        kpiModelsCount.innerText = modelsData.length > 0 ? modelsData.length : '50+';
+    }
+
+    function populateAgentFilter() {
+        filterAgent.innerHTML = '<option value="">All Agents</option>';
+        const agentIds = [...new Set(eventsData.map(e => e.agent_id))];
+        agentIds.forEach(id => {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.innerText = id;
+            filterAgent.appendChild(opt);
+        });
+    }
+
+    function renderEventsTable() {
+        const agent = filterAgent.value;
+        const reason = filterReason.value.toLowerCase();
+        const risk = filterRisk.value;
+        const compliance = filterCompliance.value;
+
+        const filtered = eventsData.filter(e => {
+            if (agent && e.agent_id !== agent) return false;
+            if (reason && e.reason.toLowerCase() !== reason) return false;
+            if (risk && e.risk_level !== risk) return false;
+            if (compliance === 'true' && !e.compliance_flagged) return false;
+            if (compliance === 'false' && e.compliance_flagged) return false;
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            eventsTbody.innerHTML = `<tr><td colspan="8" class="text-center">No governance events match the selected filters.</td></tr>`;
+            return;
+        }
+
+        eventsTbody.innerHTML = filtered.map(e => {
+            const dateStr = new Date(e.timestamp).toLocaleString();
+            const riskBadgeClass = `badge risk-${e.risk_level.toLowerCase()}`;
+            const compBadgeClass = e.compliance_flagged ? 'badge status-flagged' : 'badge status-approved';
+            const compText = e.compliance_flagged ? '⛔ Violation Flagged' : '✅ Compliant';
+
+            return `
+                <tr>
+                    <td class="font-mono text-sm">${dateStr}</td>
+                    <td><strong>${escapeHtml(e.agent_id)}</strong></td>
+                    <td><span class="model-tag requested">${escapeHtml(e.requested_model)}</span></td>
+                    <td><span class="model-tag actual">${escapeHtml(e.actual_model)}</span></td>
+                    <td><span class="badge reason-${e.reason.toLowerCase()}">${escapeHtml(e.reason.toUpperCase())}</span></td>
+                    <td><span class="${riskBadgeClass}">${escapeHtml(e.risk_level)}</span></td>
+                    <td><span class="${compBadgeClass}">${compText}</span></td>
+                    <td>
+                        <button class="btn btn-secondary text-sm" onclick="window.inspectEvent('${e.id}')">Inspect</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function renderModelsTable() {
+        const query = (searchModels ? searchModels.value : '').toLowerCase();
+        const filtered = modelsData.filter(m => m.model_name.toLowerCase().includes(query));
+
+        if (filtered.length === 0) {
+            modelsTbody.innerHTML = `<tr><td colspan="4" class="text-center">No model profiles found.</td></tr>`;
+            return;
+        }
+
+        modelsTbody.innerHTML = filtered.map(m => `
             <tr>
-                <td style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">${timeStr}</td>
-                <td><strong>${e.agent_id}</strong></td>
-                <td style="font-family: var(--font-mono); font-size: 0.75rem;">${e.session_id}</td>
-                <td class="model-flow">
-                    <span class="model-req">${e.requested_model}</span> ➔ <span class="model-act">${e.actual_model}</span>
-                </td>
-                <td><span class="badge badge-reason">${e.reason.toUpperCase()}</span></td>
-                <td><span class="badge badge-risk-${e.risk_level}">${e.risk_level}</span></td>
-                <td>${complianceBadge}</td>
+                <td><strong>${escapeHtml(m.model_name)}</strong></td>
+                <td><span class="font-mono">${m.context_window.toLocaleString()} tokens</span></td>
+                <td><span class="badge status-approved">${escapeHtml(m.guardrail_level || 'Medium')}</span></td>
+                <td><span class="font-mono">${m.bias_score || 5.0}</span></td>
+            </tr>
+        `).join('');
+    }
+
+    function renderAgentsTable() {
+        if (agentsData.length === 0) {
+            agentsTbody.innerHTML = `<tr><td colspan="4" class="text-center">No agent policies configured.</td></tr>`;
+            return;
+        }
+
+        agentsTbody.innerHTML = agentsData.map(a => `
+            <tr>
+                <td><strong>${escapeHtml(a.agent_id)}</strong></td>
+                <td>${escapeHtml(a.agent_name)}</td>
+                <td>${escapeHtml(a.description || 'N/A')}</td>
                 <td>
-                    <button class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onclick="openEventDetail('${e.id}')">Inspect</button>
+                    ${a.approved_models.map(m => `<span class="model-tag approved">${escapeHtml(m)}</span>`).join(' ')}
                 </td>
             </tr>
-        `;
-    }).join("");
-}
-
-window.openEventDetail = function(eventId) {
-    const event = allEvents.find(e => e.id === eventId);
-    if (!event) return;
-
-    const modalBody = document.getElementById("modal-body");
-    modalBody.innerHTML = `
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
-            <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px;">
-                <h4 style="color: var(--primary); margin-bottom: 0.4rem;">Substitution Overview</h4>
-                <p><strong>Agent ID:</strong> ${event.agent_id}</p>
-                <p><strong>Session ID:</strong> ${event.session_id}</p>
-                <p><strong>Timestamp:</strong> ${new Date(event.timestamp).toLocaleString()}</p>
-                <p><strong>Trigger Reason:</strong> ${event.reason.toUpperCase()}</p>
-            </div>
-
-            <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px;">
-                <h4 style="color: var(--warning); margin-bottom: 0.4rem;">Capability Risk Assessment</h4>
-                <p><strong>Risk Level:</strong> <span class="badge badge-risk-${event.risk_level}">${event.risk_level}</span></p>
-                <p><strong>Context Window Drop:</strong> ${event.context_downgrade_pct}%</p>
-                <p><strong>Guardrail Level Drop:</strong> ${event.guardrail_downgrade ? 'YES ⚠️' : 'NO ✓'}</p>
-                <p><strong>Bias Score Delta:</strong> ${event.bias_delta > 0 ? '+' : ''}${event.bias_delta}</p>
-                <p style="margin-top: 0.4rem; color: var(--text-muted);"><em>${event.risk_reason || 'N/A'}</em></p>
-            </div>
-
-            <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px;">
-                <h4 style="color: ${event.compliance_flagged ? 'var(--danger)' : 'var(--success)'}; margin-bottom: 0.4rem;">Compliance Audit</h4>
-                <p><strong>Status:</strong> ${event.compliance_flagged ? 'VIOLATION FLAGGED 🚨' : 'APPROVED MODEL ✓'}</p>
-                <p style="color: var(--text-muted);"><em>${event.compliance_reason || 'Substituted model is compliant.'}</em></p>
-            </div>
-        </div>
-    `;
-
-    document.getElementById("event-modal").classList.add("active");
-};
-
-async function loadAuditSummary() {
-    try {
-        const res = await fetch(`${API_BASE}/compliance/audit`);
-        if (res.ok) {
-            const data = await res.json();
-            document.getElementById("audit-total").innerText = data.total_events;
-            document.getElementById("audit-unapproved").innerText = data.unapproved_substitutions;
-            document.getElementById("audit-rate").innerText = `${data.compliance_violation_rate}%`;
-            document.getElementById("audit-high").innerText = data.high_risk_substitutions + data.critical_risk_substitutions;
-
-            const tagContainer = document.getElementById("audit-agents-list");
-            if (data.affected_agents.length > 0) {
-                tagContainer.innerHTML = data.affected_agents.map(a => `<span class="badge badge-violation">${a}</span>`).join(" ");
-            } else {
-                tagContainer.innerHTML = `<span class="badge badge-compliant">No Agent Policy Violations</span>`;
-            }
-        }
-    } catch (e) {
-        console.error("Audit load error:", e);
+        `).join('');
     }
-}
 
-async function loadAgentPolicies() {
-    try {
-        const res = await fetch(`${API_BASE}/agents`);
-        if (res.ok) {
-            const agents = await res.json();
-            const container = document.getElementById("agents-cards-container");
-            container.innerHTML = agents.map(a => `
-                <div class="kpi-card" style="margin-bottom: 1rem;">
-                    <h3>🤖 ${a.agent_id}</h3>
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0.3rem 0;">${a.agent_name}</p>
-                    <div style="margin-top: 0.6rem;">
-                        <strong>Approved Whitelist Models:</strong>
-                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.4rem;">
-                            ${a.approved_models.map(m => `<span class="badge badge-compliant">${m}</span>`).join("")}
+    async function loadAuditReport() {
+        auditContainer.innerHTML = '<p class="subtitle">Computing retroactive audit across historical records...</p>';
+        try {
+            const res = await fetch(`${API_BASE}/compliance/audit`);
+            if (res.ok) {
+                const data = await res.json();
+                auditContainer.innerHTML = `
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-title">EVENTS ANALYZED</div>
+                            <div class="kpi-value">${data.total_events_analyzed}</div>
+                        </div>
+                        <div class="kpi-card danger">
+                            <div class="kpi-title">UNAPPROVED REQUESTS</div>
+                            <div class="kpi-value">${data.total_unapproved_requests}</div>
+                            <div class="kpi-sub">${data.compliance_flag_rate_pct}% Violation Rate</div>
+                        </div>
+                        <div class="kpi-card warning">
+                            <div class="kpi-title">HIGH RISK EXPOSURE</div>
+                            <div class="kpi-value">${data.high_risk_substitutions}</div>
+                            <div class="kpi-sub">${data.high_risk_exposure_pct}% Exposure Ratio</div>
                         </div>
                     </div>
-                </div>
-            `).join("");
+                    ${data.unapproved_events.length > 0 ? `
+                        <h3 class="margin-top">Flagged Compliance Violation Events</h3>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Agent ID</th>
+                                        <th>Requested</th>
+                                        <th>Actual Used</th>
+                                        <th>Compliance Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.unapproved_events.map(ev => `
+                                        <tr>
+                                            <td><strong>${escapeHtml(ev.agent_id)}</strong></td>
+                                            <td>${escapeHtml(ev.requested_model)}</td>
+                                            <td>${escapeHtml(ev.actual_model)}</td>
+                                            <td class="text-danger">${escapeHtml(ev.compliance_reason)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    ` : '<p class="subtitle text-success">No compliance violations detected in recent event logs.</p>'}
+                `;
+            }
+        } catch (e) {
+            console.error('Audit report error:', e);
+            auditContainer.innerHTML = '<p class="subtitle text-danger">Failed to generate audit report.</p>';
         }
-    } catch (e) {
-        console.error("Agent policies load error:", e);
-    }
-}
-
-async function loadModelProfiles() {
-    try {
-        const res = await fetch(`${API_BASE}/models`);
-        if (res.ok) {
-            const models = await res.json();
-            const tbody = document.getElementById("models-tbody");
-            tbody.innerHTML = models.map(m => `
-                <tr>
-                    <td><strong>${m.model_name}</strong></td>
-                    <td style="font-family: var(--font-mono);">${m.context_window.toLocaleString()} tokens</td>
-                    <td><span class="badge badge-reason">${m.guardrail_level}</span></td>
-                    <td style="font-family: var(--font-mono);">${m.bias_score}</td>
-                    <td style="color: var(--text-muted);">${m.description || '-'}</td>
-                </tr>
-            `).join("");
-        }
-    } catch (e) {
-        console.error("Models load error:", e);
-    }
-}
-
-window.triggerSimScenario = async function(type) {
-    const box = document.getElementById("sim-result");
-    box.classList.remove("hidden");
-    box.innerText = "Triggering substitution event...";
-
-    let payload = {};
-    const sess = "sess_" + Math.random().toString(36).substring(2, 8);
-
-    if (type === 'cost') {
-        payload = {
-            requested_model: "gpt-4",
-            actual_model: "gpt-4o-mini",
-            reason: "cost",
-            agent_id: "Finance-Bot",
-            session_id: sess
-        };
-    } else if (type === 'availability') {
-        payload = {
-            requested_model: "claude-3-5-sonnet",
-            actual_model: "gemini-1-5-flash",
-            reason: "availability",
-            agent_id: "Support-Agent",
-            session_id: sess
-        };
-    } else if (type === 'policy') {
-        payload = {
-            requested_model: "gpt-4",
-            actual_model: "llama-3-70b",
-            reason: "policy",
-            agent_id: "HR-Policy-Bot",
-            session_id: sess
-        };
     }
 
-    try {
-        const res = await fetch(`${API_BASE}/events`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
+    // Modal Inspection Helper
+    window.inspectEvent = function(eventId) {
+        const ev = eventsData.find(e => e.id === eventId);
+        if (!ev) return;
 
-        if (res.ok) {
-            const data = await res.json();
-            box.innerText = `✅ SUBSTITUTION EVENT RECORDED!\n` +
-                `Event ID: ${data.id}\n` +
-                `Risk Level: ${data.risk_level}\n` +
-                `Compliance Flagged: ${data.compliance_flagged} (${data.compliance_reason || 'Compliant'})`;
-            
-            // Reload table
-            loadDashboardData();
-        } else {
-            box.innerText = `❌ Error recording event: HTTP ${res.status}`;
-        }
-    } catch (e) {
-        box.innerText = `❌ Error: ${e.message}`;
+        modalContent.innerHTML = `
+            <div class="detail-row"><strong>Event ID:</strong> <span class="font-mono">${ev.id}</span></div>
+            <div class="detail-row"><strong>Timestamp:</strong> ${new Date(ev.timestamp).toLocaleString()}</div>
+            <div class="detail-row"><strong>Agent ID:</strong> ${escapeHtml(ev.agent_id)}</div>
+            <div class="detail-row"><strong>Session ID:</strong> <span class="font-mono">${escapeHtml(ev.session_id)}</span></div>
+            <hr class="divider"/>
+            <div class="detail-row"><strong>Requested Model:</strong> <span class="model-tag requested">${escapeHtml(ev.requested_model)}</span></div>
+            <div class="detail-row"><strong>Actual Model Used:</strong> <span class="model-tag actual">${escapeHtml(ev.actual_model)}</span></div>
+            <div class="detail-row"><strong>Substitution Reason:</strong> <span class="badge reason-${ev.reason.toLowerCase()}">${escapeHtml(ev.reason.toUpperCase())}</span></div>
+            <hr class="divider"/>
+            <div class="detail-row"><strong>Risk Assessment Level:</strong> <span class="badge risk-${ev.risk_level.toLowerCase()}">${escapeHtml(ev.risk_level)}</span></div>
+            <div class="detail-row"><strong>Context Downgrade:</strong> ${ev.context_downgrade_pct}% reduction</div>
+            <div class="detail-row"><strong>Risk Analysis Details:</strong> ${escapeHtml(ev.risk_reason)}</div>
+            <hr class="divider"/>
+            <div class="detail-row"><strong>Compliance Status:</strong> ${ev.compliance_flagged ? '<span class="badge status-flagged">⛔ VIOLATION FLAGGED</span>' : '<span class="badge status-approved">✅ COMPLIANT</span>'}</div>
+            ${ev.compliance_reason ? `<div class="detail-row text-danger"><strong>Violation Reason:</strong> ${escapeHtml(ev.compliance_reason)}</div>` : ''}
+        `;
+        eventModal.classList.add('active');
+    };
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
     }
-};
+});

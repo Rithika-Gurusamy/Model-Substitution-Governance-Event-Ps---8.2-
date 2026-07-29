@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Model Substitution Governance Tracker</title>
+    <title>Model Substitution Governance Tracker - Enterprise Platform</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -16,14 +16,14 @@
             <div class="shield-icon">🛡️</div>
             <div>
                 <h1>Model Substitution Governance Tracker</h1>
-                <p class="subtitle">LLM Gateway Compliance & Capability Risk Audit Platform</p>
+                <p class="subtitle">LLM Gateway Compliance & Capability Risk Audit Platform (v1.0 Production API)</p>
             </div>
         </div>
         <div class="nav-right">
             <div class="status-indicator" id="api-status">
-                <span class="status-dot green"></span> API Connected
+                <span class="status-dot green"></span> API Connected (/api/v1)
             </div>
-            <button class="btn btn-secondary" id="btn-refresh">🔄 Refresh</button>
+            <button class="btn btn-secondary" id="btn-refresh">🔄 Refresh Data</button>
             <button class="btn btn-primary" id="btn-open-sim">⚡ Gateway Simulator</button>
         </div>
     </header>
@@ -32,213 +32,159 @@
     <div class="app-container">
         <!-- Navigation Tabs -->
         <nav class="tabs-nav">
-            <button class="tab-btn active" data-tab="tab-events">📊 Governance Event Log</button>
+            <button class="tab-btn active" data-tab="tab-events">📊 Governance Event Stream</button>
             <button class="tab-btn" data-tab="tab-audit">⚖️ Retroactive Compliance Audit</button>
+            <button class="tab-btn" data-tab="tab-models">🧠 Model Directory & Context Windows</button>
             <button class="tab-btn" data-tab="tab-agents">🤖 Agent Whitelist Policies</button>
-            <button class="tab-btn" data-tab="tab-models">🧠 Model Profiles Benchmark</button>
         </nav>
 
-        <!-- Tab 1: Live Governance Events -->
-        <main id="tab-events" class="tab-content active">
-            <!-- Executive Metrics KPI Cards -->
-            <section class="kpi-grid">
-                <div class="kpi-card">
-                    <span class="kpi-title">Total Substitutions</span>
-                    <div class="kpi-value" id="kpi-total">0</div>
-                    <span class="kpi-subtext">Recorded Events</span>
-                </div>
-                <div class="kpi-card danger">
-                    <span class="kpi-title">Compliance Violations</span>
-                    <div class="kpi-value" id="kpi-violations">0</div>
-                    <span class="kpi-subtext" id="kpi-violation-rate">0% Exposure</span>
-                </div>
-                <div class="kpi-card warning">
-                    <span class="kpi-title">High & Critical Risk</span>
-                    <div class="kpi-value" id="kpi-high-risk">0</div>
-                    <span class="kpi-subtext">Material Downgrades</span>
-                </div>
-                <div class="kpi-card info">
-                    <span class="kpi-title">Monitored Agents</span>
-                    <div class="kpi-value" id="kpi-agents">0</div>
-                    <span class="kpi-subtext">Active Policy Enforcements</span>
-                </div>
-            </section>
-
-            <!-- Filters Bar -->
-            <section class="filter-panel">
-                <div class="filter-group">
-                    <label for="filter-agent">Agent ID</label>
-                    <select id="filter-agent">
-                        <option value="">All Agents</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="filter-reason">Reason</label>
-                    <select id="filter-reason">
-                        <option value="">All Reasons</option>
-                        <option value="cost">Cost</option>
-                        <option value="availability">Availability</option>
-                        <option value="policy">Policy</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="filter-risk">Risk Level</label>
-                    <select id="filter-risk">
-                        <option value="">All Risk Levels</option>
-                        <option value="Critical">Critical</option>
-                        <option value="High">High</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Low">Low</option>
-                    </select>
-                </div>
-                <div class="filter-group toggle-group">
-                    <label for="filter-flagged">Compliance Flag</label>
-                    <input type="checkbox" id="filter-flagged">
-                    <span class="toggle-text">Only Violations</span>
-                </div>
-                <div class="filter-group search-group">
-                    <label for="filter-search">Search</label>
-                    <input type="text" id="filter-search" placeholder="Search model, session...">
-                </div>
-            </section>
-
-            <!-- Events Table -->
-            <section class="table-card">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Timestamp</th>
-                            <th>Agent ID</th>
-                            <th>Session ID</th>
-                            <th>Model Requested ➔ Actual Used</th>
-                            <th>Reason</th>
-                            <th>Capability Risk</th>
-                            <th>Compliance Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="events-tbody">
-                        <tr>
-                            <td colspan="8" class="text-center py-4">Loading governance events...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </section>
-        </main>
-
-        <!-- Tab 2: Retroactive Compliance Audit -->
-        <main id="tab-audit" class="tab-content">
-            <div class="card-grid">
-                <div class="audit-summary-card">
-                    <h2>Retroactive Compliance Exposure Assessment</h2>
-                    <p class="section-desc">Computes overall compliance risk exposure across all historical gateway substitution events.</p>
-
-                    <div class="audit-metrics">
-                        <div class="audit-metric-box">
-                            <span class="label">Total Requests Ingested</span>
-                            <span class="val" id="audit-total">0</span>
-                        </div>
-                        <div class="audit-metric-box red">
-                            <span class="label">Unapproved Requests</span>
-                            <span class="val" id="audit-unapproved">0</span>
-                        </div>
-                        <div class="audit-metric-box yellow">
-                            <span class="label">Compliance Violation Rate</span>
-                            <span class="val" id="audit-rate">0.0%</span>
-                        </div>
-                        <div class="audit-metric-box orange">
-                            <span class="label">High Risk Exposure</span>
-                            <span class="val" id="audit-high">0</span>
-                        </div>
-                    </div>
-
-                    <div class="audit-breakdown-section">
-                        <h3>Affected Agents (Policy Breach)</h3>
-                        <div id="audit-agents-list" class="tag-list">
-                            <span class="tag">None</span>
-                        </div>
-                    </div>
-                </div>
+        <!-- KPI Executive Summary Cards -->
+        <section class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-title">TOTAL SUBSTITUTIONS</div>
+                <div class="kpi-value" id="kpi-total">0</div>
+                <div class="kpi-sub">Gateway routing events</div>
             </div>
-        </main>
+            <div class="kpi-card warning">
+                <div class="kpi-title">HIGH / CRITICAL RISK</div>
+                <div class="kpi-value" id="kpi-high-risk">0</div>
+                <div class="kpi-sub">Material capability downgrades</div>
+            </div>
+            <div class="kpi-card danger">
+                <div class="kpi-title">COMPLIANCE VIOLATIONS</div>
+                <div class="kpi-value" id="kpi-violations">0</div>
+                <div class="kpi-sub">Unapproved model routing</div>
+            </div>
+            <div class="kpi-card info">
+                <div class="kpi-title">SUPPORTED MODELS</div>
+                <div class="kpi-value" id="kpi-models-count">50+</div>
+                <div class="kpi-sub">Context window profiles</div>
+            </div>
+        </section>
 
-        <!-- Tab 3: Agent Policies -->
-        <main id="tab-agents" class="tab-content">
-            <div class="card-grid">
-                <div class="full-card">
-                    <h2>Agent Approved Model Governance Whitelists</h2>
-                    <p class="section-desc">If a gateway substitutes a request to a model outside the agent's whitelist, a compliance violation flag is raised automatically.</p>
-                    
-                    <div id="agents-cards-container" class="agent-policy-grid">
-                        <!-- Rendered by JS -->
+        <!-- TAB 1: GOVERNANCE EVENT STREAM -->
+        <section id="tab-events" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Governance Substitution Event Log</h2>
+                    <div class="filter-controls">
+                        <select id="filter-agent" class="input-select">
+                            <option value="">All Agents</option>
+                        </select>
+                        <select id="filter-reason" class="input-select">
+                            <option value="">All Reasons</option>
+                            <option value="cost">Cost</option>
+                            <option value="availability">Availability</option>
+                            <option value="policy">Policy</option>
+                        </select>
+                        <select id="filter-risk" class="input-select">
+                            <option value="">All Risk Levels</option>
+                            <option value="Low">Low Risk</option>
+                            <option value="Medium">Medium Risk</option>
+                            <option value="High">High Risk</option>
+                            <option value="Critical">Critical Risk</option>
+                        </select>
+                        <select id="filter-compliance" class="input-select">
+                            <option value="">All Compliance States</option>
+                            <option value="true">Violations Only</option>
+                            <option value="false">Compliant Only</option>
+                        </select>
                     </div>
                 </div>
-            </div>
-        </main>
-
-        <!-- Tab 4: Model Profiles -->
-        <main id="tab-models" class="tab-content">
-            <div class="card-grid">
-                <div class="full-card">
-                    <h2>LLM Capability & Benchmark Directory</h2>
-                    <p class="section-desc">Capability profiles used by the Risk Assessor to detect context window drops, guardrail degradations, and bias changes.</p>
-                    
+                <div class="table-container">
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Model Name</th>
-                                <th>Context Window</th>
-                                <th>Guardrail Level</th>
-                                <th>Bias Benchmark Score</th>
-                                <th>Description</th>
+                                <th>Timestamp</th>
+                                <th>Agent ID</th>
+                                <th>Requested Model</th>
+                                <th>Actual Model Used</th>
+                                <th>Reason</th>
+                                <th>Risk Assessment</th>
+                                <th>Compliance Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="models-tbody">
-                            <!-- Rendered by JS -->
+                        <tbody id="events-tbody">
+                            <tr><td colspan="8" class="text-center">Loading governance event stream...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
-        </main>
-    </div>
+        </section>
 
-    <!-- Event Inspection Modal -->
-    <div class="modal-overlay" id="event-modal">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3>Governance Event Inspection</h3>
-                <button class="close-btn" id="modal-close">✕</button>
-            </div>
-            <div class="modal-body" id="modal-body">
-                <!-- Rendered dynamically by JS -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Gateway Simulator Modal -->
-    <div class="modal-overlay" id="sim-modal">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3>⚡ Gateway Live Substitution Simulator</h3>
-                <button class="close-btn" id="sim-close">✕</button>
-            </div>
-            <div class="modal-body">
-                <p>Trigger a live model substitution from the simulator to watch it recorded by the interceptor and processed by the risk and compliance engine.</p>
-                <div class="sim-actions">
-                    <button class="btn btn-scenario" onclick="triggerSimScenario('cost')">
-                        <strong>💰 Cost Substitution</strong>
-                        <span>GPT-4 ➔ GPT-4o-mini (Cost budget limit)</span>
-                    </button>
-                    <button class="btn btn-scenario" onclick="triggerSimScenario('availability')">
-                        <strong>🔌 Availability Fallback</strong>
-                        <span>Claude-3.5-Sonnet ➔ Gemini-1.5-Flash (503 Outage)</span>
-                    </button>
-                    <button class="btn btn-scenario danger" onclick="triggerSimScenario('policy')">
-                        <strong>🚨 Unapproved Policy Substitution</strong>
-                        <span>GPT-4 ➔ Llama-3-70b (Violates HR Agent Whitelist)</span>
-                    </button>
+        <!-- TAB 2: RETROACTIVE COMPLIANCE AUDIT -->
+        <section id="tab-audit" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Retroactive Compliance & Risk Exposure Audit</h2>
+                    <button class="btn btn-primary" id="btn-run-audit">⚡ Run Retroactive Audit</button>
                 </div>
-                <div id="sim-result" class="sim-result-box hidden"></div>
+                <div id="audit-results-container">
+                    <p class="subtitle">Click "Run Retroactive Audit" to compute compliance exposure across historical substitution logs.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: MODEL DIRECTORY & CONTEXT WINDOWS -->
+        <section id="tab-models" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Supported Model Capability Profiles & Context Windows</h2>
+                    <input type="text" id="search-models" class="input-text" placeholder="🔍 Search models (e.g. GPT-5, Claude, Gemini, Llama)...">
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Model Name</th>
+                                <th>Context Window Capacity</th>
+                                <th>Guardrail Baseline</th>
+                                <th>Bias Benchmark Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="models-tbody">
+                            <tr><td colspan="4" class="text-center">Loading model profiles...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: AGENT WHITELIST POLICIES -->
+        <section id="tab-agents" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Agent Approved Model Whitelist Policies</h2>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Agent ID</th>
+                                <th>Agent Name</th>
+                                <th>Description</th>
+                                <th>Approved Model Whitelist</th>
+                            </tr>
+                        </thead>
+                        <tbody id="agents-tbody">
+                            <tr><td colspan="4" class="text-center">Loading agent policies...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- EVENT DETAIL MODAL -->
+    <div class="modal-backdrop" id="event-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>🛡️ Governance Event Detail Inspection</h3>
+                <button class="modal-close" id="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-content">
+                <!-- Injected via JavaScript -->
             </div>
         </div>
     </div>
