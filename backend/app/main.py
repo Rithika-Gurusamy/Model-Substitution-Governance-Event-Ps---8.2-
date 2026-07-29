@@ -1,4 +1,5 @@
 import os
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,15 +15,21 @@ from backend.app.routers.events import router as events_router
 from backend.app.routers.compliance import router as compliance_router
 from backend.app.routers.models_and_agents import router as models_agents_router
 
+logger = logging.getLogger("GovernanceApp")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize DB Tables & Seed Data on Startup
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
+    # Initialize DB Tables & Seed Data on Startup safely
     try:
-        seed_database(db)
-    finally:
-        db.close()
+        Base.metadata.create_all(bind=engine)
+        db = SessionLocal()
+        try:
+            seed_database(db)
+        finally:
+            db.close()
+        logger.info("Database schema initialized and seeded successfully.")
+    except Exception as e:
+        logger.error(f"Error during database startup lifespan initialization: {e}")
     yield
 
 app = FastAPI(
