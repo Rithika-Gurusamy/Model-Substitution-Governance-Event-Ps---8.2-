@@ -1,21 +1,19 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from typing import Optional
+from backend.app.database import get_db
+from backend.app.schemas.schemas import ComplianceAuditResponse
+from backend.app.services.compliance_engine import ComplianceEngine
 
-from ..database import get_db
-from ..schemas.schemas import ComplianceAuditSummary
-from ..services.compliance_engine import ComplianceEngine
+router = APIRouter(prefix="/compliance", tags=["Compliance"])
 
-router = APIRouter(prefix="/compliance", tags=["Compliance & Audit"])
-
-@router.get("/audit", response_model=ComplianceAuditSummary)
-def get_compliance_audit(
-    agent_id: Optional[str] = Query(None, description="Optional agent ID to narrow audit"),
+@router.get("/audit", response_model=ComplianceAuditResponse)
+def get_retroactive_compliance_audit(
+    limit: int = Query(500, ge=1, le=5000),
     db: Session = Depends(get_db)
 ):
     """
-    Bonus Feature: Retroactive compliance impact assessment.
-    Computes total non-approved requests, violation rate, high risk exposures, and affected agents.
+    Computes a retroactive compliance impact assessment across historical substitution logs.
+    Identifies unapproved model usage and calculates total risk exposure.
     """
-    summary = ComplianceEngine.perform_retroactive_audit(db, agent_id=agent_id)
-    return summary
+    compliance_engine = ComplianceEngine(db)
+    return compliance_engine.generate_retroactive_audit(limit=limit)

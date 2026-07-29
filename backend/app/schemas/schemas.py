@@ -1,21 +1,49 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Optional, List
+from pydantic import BaseModel, Field, ConfigDict
 
-# Event Creation Schema
-class EventCreate(BaseModel):
-    requested_model: str = Field(..., json_schema_extra={"example": "gpt-4"})
-    actual_model: str = Field(..., json_schema_extra={"example": "gpt-4o-mini"})
-    reason: str = Field(..., json_schema_extra={"example": "cost"}, description="Reason for substitution: cost, availability, or policy")
-    timestamp: Optional[datetime] = None
-    agent_id: str = Field(..., json_schema_extra={"example": "HR-Agent"})
-    session_id: str = Field(..., json_schema_extra={"example": "session-123"})
-    metadata: Optional[Dict[str, Any]] = None
+# --- Model Profile Schemas ---
+class ModelProfileBase(BaseModel):
+    model_name: str
+    context_window: int
+    guardrail_level: Optional[str] = "Medium"
+    bias_score: Optional[float] = 5.0
 
-# Event Response Schema
-class EventResponse(BaseModel):
+class ModelProfileCreate(ModelProfileBase):
+    pass
+
+class ModelProfileResponse(ModelProfileBase):
+    id: str
+    created_at: datetime
+
     model_config = ConfigDict(from_attributes=True)
 
+# --- Agent & Policy Schemas ---
+class AgentBase(BaseModel):
+    agent_id: str
+    agent_name: str
+    description: Optional[str] = None
+
+class AgentCreate(AgentBase):
+    approved_models: List[str] = []
+
+class AgentResponse(AgentBase):
+    id: str
+    approved_models: List[str] = []
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+# --- Governance Event Schemas ---
+class SubstitutionEventCreate(BaseModel):
+    requested_model: str = Field(..., json_schema_extra={"example": "GPT-5"})
+    actual_model: str = Field(..., json_schema_extra={"example": "GPT-4o Mini"})
+    reason: str = Field(..., description="cost, availability, or policy", json_schema_extra={"example": "cost"})
+    agent_id: str = Field(..., json_schema_extra={"example": "HR-Agent"})
+    session_id: str = Field(..., json_schema_extra={"example": "sess-10293"})
+    timestamp: Optional[datetime] = None
+
+class GovernanceEventResponse(BaseModel):
     id: str
     requested_model: str
     actual_model: str
@@ -24,41 +52,18 @@ class EventResponse(BaseModel):
     agent_id: str
     session_id: str
     risk_level: str
-    risk_reason: Optional[str] = None
+    risk_reason: str
     context_downgrade_pct: float
-    guardrail_downgrade: bool
-    bias_delta: float
     compliance_flagged: bool
     compliance_reason: Optional[str] = None
-    extra_metadata: Optional[Dict[str, Any]] = None
 
-# Model Profile Schema
-class ModelProfileBase(BaseModel):
-    model_name: str
-    context_window: int
-    guardrail_level: str
-    bias_score: float
-    description: Optional[str] = None
-
-class ModelProfileResponse(ModelProfileBase):
     model_config = ConfigDict(from_attributes=True)
 
-# Agent Schema
-class AgentBase(BaseModel):
-    agent_id: str
-    agent_name: str
-    approved_models: List[str]
-
-class AgentResponse(AgentBase):
-    model_config = ConfigDict(from_attributes=True)
-
-# Compliance Audit Summary Schema
-class ComplianceAuditSummary(BaseModel):
-    total_events: int
-    unapproved_substitutions: int
-    compliance_violation_rate: float
+# --- Retroactive Compliance Audit Schemas ---
+class ComplianceAuditResponse(BaseModel):
+    total_events_analyzed: int
+    total_unapproved_requests: int
+    compliance_flag_rate_pct: float
     high_risk_substitutions: int
-    critical_risk_substitutions: int
-    affected_agents: List[str]
-    substitution_reasons_breakdown: Dict[str, int]
-    risk_level_breakdown: Dict[str, int]
+    high_risk_exposure_pct: float
+    unapproved_events: List[GovernanceEventResponse]

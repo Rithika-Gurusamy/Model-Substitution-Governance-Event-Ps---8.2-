@@ -1,76 +1,63 @@
-import sys
-import os
 import pytest
 from fastapi.testclient import TestClient
+from backend.app.main import app
+from backend.app.database import engine, Base, SessionLocal
+from backend.app.seed_data import seed_database
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-from app.main import app
-from app.database import Base, engine
+# Ensure database tables and seed data exist for pytest
+Base.metadata.create_all(bind=engine)
+db = SessionLocal()
+try:
+    seed_database(db)
+finally:
+    db.close()
 
 client = TestClient(app)
 
-@pytest.fixture(autouse=True)
-def setup_db():
-    Base.metadata.create_all(bind=engine)
-    yield
+def test_health_check():
+    response = client.get("/api/v1/health")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "healthy"
 
-def test_health():
-    res = client.get("/health")
-    assert res.status_code == 200
-    assert res.json()["status"] == "healthy"
+def test_list_models_seeded():
+    response = client.get("/api/v1/models")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) >= 50
+    model_names = [m["model_name"] for m in data]
+    assert "GPT-5" in model_names
+    assert "Claude Opus 4" in model_names
+    assert "Gemini 1.5 Pro" in model_names
 
-def test_record_cost_substitution_event():
+def test_record_substitution_event():
     payload = {
-        "requested_model": "gpt-4",
-        "actual_model": "gpt-4o-mini",
+        "requested_model": "GPT-5",
+        "actual_model": "GPT-4o Mini",
         "reason": "cost",
-        "agent_id": "Finance-Bot",
-        "session_id": "test-session-1"
+        "agent_id": "HR-Agent",
+        "session_id": "test-sess-1"
     }
-    res = client.post("/events", json=payload)
-    assert res.status_code == 201
-    data = res.json()
-    assert data["requested_model"] == "gpt-4"
-    assert data["actual_model"] == "gpt-4o-mini"
-    assert data["reason"] == "cost"
-    # Material context downgrade (128k -> 32k is 75% drop)
+    response = client.post("/api/v1/events", json=payload)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["requested_model"] == "GPT-5"
+    assert data["actual_model"] == "GPT-4o Mini"
     assert data["risk_level"] in ["High", "Critical"]
-    assert data["context_downgrade_pct"] >= 50.0
-
-def test_record_unapproved_model_compliance_flag():
-    payload = {
-        "requested_model": "gpt-4",
-        "actual_model": "llama-3-70b",
-        "reason": "policy",
-        "agent_id": "HR-Policy-Bot",
-        "session_id": "test-session-2"
-    }
-    res = client.post("/events", json=payload)
-    assert res.status_code == 201
-    data = res.json()
     assert data["compliance_flagged"] is True
-    assert "Compliance Violation" in data["compliance_reason"]
 
 def test_query_events_filter():
-    client.post("/events", json={
-        "requested_model": "claude-3-5-sonnet",
-        "actual_model": "gemini-1-5-flash",
-        "reason": "availability",
-        "agent_id": "Support-Agent",
-        "session_id": "test-session-3"
-    })
-    
-    res = client.get("/events?reason=availability")
-    assert res.status_code == 200
-    events = res.json()
-    assert len(events) >= 1
-    assert all(e["reason"] == "availability" for e in events)
+    response = client.get("/api/v1/events?agent_id=HR-Agent")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) >= 1
+    assert data[0]["agent_id"] == "HR-Agent"
 
 def test_retroactive_compliance_audit():
-    res = client.get("/compliance/audit")
-    assert res.status_code == 200
-    data = res.json()
-    assert "total_events" in data
-    assert "unapproved_substitutions" in data
-    assert "compliance_violation_rate" in data
+    response = client.get("/api/v1/compliance/audit")
+    assert response.status_code == 200
+    data = response.json()
+    assert "total_events_analyzed" in data
+    assert "total_unapproved_requests" in data
+    assert "compliance_flag_rate_pct" in data

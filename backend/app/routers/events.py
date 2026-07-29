@@ -1,93 +1,91 @@
+from typing import Optional, List
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-from typing import List, Optional
-from datetime import datetime, timezone
-
-from ..database import get_db
-from ..models.models import GovernanceEvent
-from ..schemas.schemas import EventCreate, EventResponse
-from ..services.risk_assessor import RiskAssessor
-from ..services.compliance_engine import ComplianceEngine
+from backend.app.database import get_db
+from backend.app.schemas.schemas import SubstitutionEventCreate, GovernanceEventResponse
+from backend.app.repositories.event_repository import EventRepository
+from backend.app.services.risk_assessor import RiskAssessor
+from backend.app.services.compliance_engine import ComplianceEngine
 
 router = APIRouter(prefix="/events", tags=["Governance Events"])
 
-@router.post("", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
-def record_event(payload: EventCreate, db: Session = Depends(get_db)):
+@router.post("", response_model=GovernanceEventResponse, status_code=status.HTTP_201_CREATED)
+def record_substitution_event(
+    payload: SubstitutionEventCreate,
+    db: Session = Depends(get_db)
+):
     """
-    Ingests model substitution event from interceptor, assesses capability risk,
-    checks agent compliance whitelist, and records governance log.
+    Ingest a model substitution event from the Interceptor.
+    Performs real-time Capability Risk Assessment and Compliance Whitelist checking.
     """
-    # 1. Risk Assessment
-    risk_level, risk_reason, ctx_drop, g_drop, bias_delta = RiskAssessor.evaluate(
-        db, payload.requested_model, payload.actual_model
+    risk_assessor = RiskAssessor(db)
+    compliance_engine = ComplianceEngine(db)
+    event_repo = EventRepository(db)
+
+    # 1. Evaluate Capability Risk
+    risk_level, risk_reason, downgrade_pct = risk_assessor.evaluate_substitution_risk(
+        payload.requested_model,
+        payload.actual_model
     )
 
-    # 2. Compliance Flag Check
-    compliance_flagged, compliance_reason = ComplianceEngine.check_compliance(
-        db, payload.agent_id, payload.actual_model
+    # 2. Evaluate Agent Compliance Whitelist
+    compliance_flagged, compliance_reason = compliance_engine.evaluate_compliance(
+        payload.agent_id,
+        payload.actual_model
     )
 
-    # If unapproved model, upgrade risk to Critical if it wasn't already High
-    if compliance_flagged and risk_level == "Low":
-        risk_level = "Medium"
-
-    # 3. Create DB Record
-    event = GovernanceEvent(
+    # 3. Persist Governance Event Record
+    event = event_repo.create(
         requested_model=payload.requested_model,
         actual_model=payload.actual_model,
-        reason=payload.reason.lower(),
-        timestamp=payload.timestamp or datetime.now(timezone.utc),
+        reason=payload.reason,
         agent_id=payload.agent_id,
         session_id=payload.session_id,
         risk_level=risk_level,
         risk_reason=risk_reason,
-        context_downgrade_pct=ctx_drop,
-        guardrail_downgrade=g_drop,
-        bias_delta=bias_delta,
+        context_downgrade_pct=downgrade_pct,
         compliance_flagged=compliance_flagged,
         compliance_reason=compliance_reason,
-        extra_metadata=payload.metadata
+        timestamp=payload.timestamp
     )
-
-    db.add(event)
-    db.commit()
-    db.refresh(event)
 
     return event
 
-@router.get("", response_model=List[EventResponse])
+@router.get("", response_model=List[GovernanceEventResponse])
 def query_events(
     agent_id: Optional[str] = Query(None, description="Filter by Agent ID"),
-    reason: Optional[str] = Query(None, description="Filter by reason (cost, availability, policy)"),
-    risk_level: Optional[str] = Query(None, description="Filter by risk level (Low, Medium, High, Critical)"),
-    compliance_flagged: Optional[bool] = Query(None, description="Filter by compliance flag"),
-    limit: int = Query(50, ge=1, le=500),
+    reason: Optional[str] = Query(None, description="Filter by substitution reason (cost, availability, policy)"),
+    risk_level: Optional[str] = Query(None, description="Filter by Risk Level (Low, Medium, High, Critical)"),
+    compliance_flagged: Optional[bool] = Query(None, description="Filter by Compliance Flag"),
+    start_time: Optional[datetime] = Query(None, description="ISO Start Timestamp"),
+    end_time: Optional[datetime] = Query(None, description="ISO End Timestamp"),
+    limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db)
 ):
     """
-    Query governance event log by agent, substitution reason, risk level, and compliance status.
+    Query governance event logs with optional multi-attribute filters.
     """
-    query = db.query(GovernanceEvent)
+    event_repo = EventRepository(db)
+    return event_repo.filter_events(
+        agent_id=agent_id,
+        reason=reason,
+        risk_level=risk_level,
+        compliance_flagged=compliance_flagged,
+        start_time=start_time,
+        end_time=end_time,
+        limit=limit,
+        offset=offset
+    )
 
-    if agent_id:
-        query = query.filter(GovernanceEvent.agent_id == agent_id)
-    if reason:
-        query = query.filter(GovernanceEvent.reason == reason.lower())
-    if risk_level:
-        query = query.filter(GovernanceEvent.risk_level == risk_level)
-    if compliance_flagged is not None:
-        query = query.filter(GovernanceEvent.compliance_flagged == compliance_flagged)
-
-    events = query.order_by(GovernanceEvent.timestamp.desc()).offset(offset).limit(limit).all()
-    return events
-
-@router.get("/{event_id}", response_model=EventResponse)
-def get_event_detail(event_id: str, db: Session = Depends(get_db)):
+@router.get("/{id}", response_model=GovernanceEventResponse)
+def get_event_by_id(id: str, db: Session = Depends(get_db)):
     """
-    Retrieve single governance event by ID.
+    Retrieve details for a single governance event record.
     """
-    event = db.query(GovernanceEvent).filter(GovernanceEvent.id == event_id).first()
+    event_repo = EventRepository(db)
+    event = event_repo.get_by_id(id)
     if not event:
-        raise HTTPException(status_code=404, detail="Governance event not found.")
+        raise HTTPException(status_code=404, detail=f"Governance event '{id}' not found.")
     return event
