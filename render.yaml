@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: model-substitution-governance-tracker
+    env: python
+    buildCommand: pip install -r backend/requirements.txt && pip install -e interceptor/
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: DATABASE_URL
+        sync: false
