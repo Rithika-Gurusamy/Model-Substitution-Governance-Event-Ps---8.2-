@@ -1,96 +1,78 @@
+import os
+import sys
 import time
 import uuid
-import sys
-import os
 
-# Allow importing local interceptor module directly
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# Add interceptor directory to sys.path if governance_interceptor is not installed globally
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "interceptor")))
 
-from interceptor import GovernanceInterceptor
+from governance_interceptor import GovernanceInterceptor
 
-def run_gateway_simulation(tracker_url="http://localhost:8000"):
+def main():
     print("=" * 70)
-    print("🚀 STARTING LLM GATEWAY MODEL SUBSTITUTION SIMULATOR")
+    print("⚡ LLM Gateway Substitution Simulator (Governance Interceptor Integration)")
     print("=" * 70)
-    
-    interceptor = GovernanceInterceptor(tracker_url=tracker_url, fail_silently=True)
-    
+    print("Connecting to Governance Tracker at: http://localhost:8000/api/v1/events\n")
+
+    interceptor = GovernanceInterceptor(tracker_url="http://localhost:8000")
+
+    # Substitution Scenarios
     scenarios = [
         {
-            "name": "Scenario 1: Cost-Based Model Downgrade",
+            "name": "Scenario 1: Cost-Based Substitution (High Risk + Compliance Violation)",
+            "agent_id": "HR-Agent",
+            "requested_model": "GPT-5",
+            "actual_model": "GPT-4o Mini",
+            "reason": "cost"
+        },
+        {
+            "name": "Scenario 2: Availability/Outage Fallback (High Risk)",
             "agent_id": "Finance-Bot",
-            "requested_model": "gpt-4",
-            "actual_model": "gpt-4o-mini",
-            "reason": "cost",
-            "session_id": f"sess_{uuid.uuid4().hex[:8]}",
-            "desc": "Gateway routed request to cheaper model because high token usage exceeded cost budget."
+            "requested_model": "Claude Opus 4",
+            "actual_model": "Gemini 1.5 Flash",
+            "reason": "availability"
         },
         {
-            "name": "Scenario 2: Availability / Outage Fallback",
-            "agent_id": "Support-Agent",
-            "requested_model": "claude-3-5-sonnet",
-            "actual_model": "gemini-1-5-flash",
-            "reason": "availability",
-            "session_id": f"sess_{uuid.uuid4().hex[:8]}",
-            "desc": "Primary provider returned HTTP 503 Outage. Gateway automatically switched to secondary provider."
+            "name": "Scenario 3: Governance Policy Enforced Substitution (Low Risk)",
+            "agent_id": "Support-Router",
+            "requested_model": "GPT-4",
+            "actual_model": "Llama 3.1 8B",
+            "reason": "policy"
         },
         {
-            "name": "Scenario 3: Policy-Based Routing to Unapproved Model",
-            "agent_id": "HR-Policy-Bot",
-            "requested_model": "gpt-4",
-            "actual_model": "llama-3-70b",
-            "reason": "policy",
-            "session_id": f"sess_{uuid.uuid4().hex[:8]}",
-            "desc": "Data residency policy restricted cloud LLM usage. Gateway rerouted to local Llama model (Unapproved model)."
-        },
-        {
-            "name": "Scenario 4: Direct Match (No Substitution)",
-            "agent_id": "Code-Assistant",
-            "requested_model": "gpt-4o",
-            "actual_model": "gpt-4o",
-            "reason": "normal",
-            "session_id": f"sess_{uuid.uuid4().hex[:8]}",
-            "desc": "Gateway served request using exact model requested."
+            "name": "Scenario 4: Approved Substitution (Low Risk + Compliant)",
+            "agent_id": "Finance-Bot",
+            "requested_model": "Claude Opus 4",
+            "actual_model": "Gemini 1.5 Pro",
+            "reason": "availability"
         }
     ]
 
-    for i, s in enumerate(scenarios, 1):
-        print(f"\n----------------------------------------------------------------------")
-        print(f"📌 [{i}/4] {s['name']}")
-        print(f"   Description: {s['desc']}")
-        print(f"   Agent ID   : {s['agent_id']}")
-        print(f"   Requested  : {s['requested_model']}")
-        print(f"   Actual Used: {s['actual_model']}")
-        print(f"   Reason     : {s['reason']}")
-        
-        result = interceptor.intercept_substitution(
-            requested_model=s["requested_model"],
-            actual_model=s["actual_model"],
-            reason=s["reason"],
-            agent_id=s["agent_id"],
-            session_id=s["session_id"]
+    for idx, sc in enumerate(scenarios, 1):
+        session_id = f"sess-{uuid.uuid4().hex[:8]}"
+        print(f"[{idx}] Triggering {sc['name']}...")
+        print(f"    Agent ID: {sc['agent_id']} | Session: {session_id}")
+        print(f"    Routing Decision: Requested '{sc['requested_model']}' → Substituted to '{sc['actual_model']}' (Reason: {sc['reason']})")
+
+        was_substituted, event = interceptor.intercept(
+            requested_model=sc["requested_model"],
+            actual_model=sc["actual_model"],
+            reason=sc["reason"],
+            agent_id=sc["agent_id"],
+            session_id=session_id
         )
 
-        if result.get("substituted"):
-            if result.get("recorded"):
-                evt = result.get("event", {})
-                print(f"   ✅ GOVERNANCE EVENT RECORDED!")
-                print(f"      Event ID         : {evt.get('id')}")
-                print(f"      Risk Level       : {evt.get('risk_level')}")
-                print(f"      Risk Reason      : {evt.get('risk_reason')}")
-                print(f"      Compliance Flag : {evt.get('compliance_flagged')} ({evt.get('compliance_reason')})")
-            else:
-                print(f"   ⚠️  SUBSTITUTION DETECTED BUT TRACKER UNREACHABLE (Logged locally)")
-                print(f"      Error: {result.get('error')}")
-        else:
-            print(f"   ℹ️  NO SUBSTITUTION DETECTED (Requested model matches actual model)")
+        if event:
+            print(f"    🛡️ Recorded Event ID: {event['id']}")
+            print(f"    ⚠️ Capability Risk Level: {event['risk_level']}")
+            print(f"    📝 Risk Reason: {event['risk_reason']}")
+            print(f"    🚨 Compliance Flagged: {event['compliance_flagged']}")
+            if event['compliance_flagged']:
+                print(f"    ⛔ Violation Reason: {event['compliance_reason']}")
+        print("-" * 70)
+        time.sleep(1)
 
-        time.sleep(0.5)
-
-    print("\n" + "=" * 70)
-    print("✅ SIMULATION COMPLETE. Check Governance Dashboard for results!")
-    print("=" * 70)
+    print("\n✅ Simulation complete! Check http://localhost:8000 to view events live on the Enterprise Dashboard.")
 
 if __name__ == "__main__":
-    url = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8000"
-    run_gateway_simulation(url)
+    main()
