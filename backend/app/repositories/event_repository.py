@@ -1,6 +1,7 @@
 from typing import Optional, List
 from datetime import datetime
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 from backend.app.models.models import GovernanceEvent
 
 class EventRepository:
@@ -19,6 +20,7 @@ class EventRepository:
         context_downgrade_pct: float,
         compliance_flagged: bool,
         compliance_reason: Optional[str] = None,
+        organization_id: Optional[str] = None,
         timestamp: Optional[datetime] = None
     ) -> GovernanceEvent:
         event = GovernanceEvent(
@@ -31,11 +33,12 @@ class EventRepository:
             risk_reason=risk_reason,
             context_downgrade_pct=context_downgrade_pct,
             compliance_flagged=compliance_flagged,
-            compliance_reason=compliance_reason
+            compliance_reason=compliance_reason,
+            organization_id=organization_id,
         )
         if timestamp:
             event.timestamp = timestamp
-            
+
         self.db.add(event)
         self.db.commit()
         self.db.refresh(event)
@@ -52,17 +55,20 @@ class EventRepository:
         compliance_flagged: Optional[bool] = None,
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
+        organization_id: Optional[str] = None,
         limit: int = 100,
         offset: int = 0
     ) -> List[GovernanceEvent]:
         query = self.db.query(GovernanceEvent)
 
+        if organization_id:
+            query = query.filter(GovernanceEvent.organization_id == organization_id)
         if agent_id:
             query = query.filter(GovernanceEvent.agent_id == agent_id)
         if reason:
-            query = query.filter(GovernanceEvent.reason.ilike(reason))
+            query = query.filter(GovernanceEvent.reason == reason)
         if risk_level:
-            query = query.filter(GovernanceEvent.risk_level.ilike(risk_level))
+            query = query.filter(GovernanceEvent.risk_level == risk_level)
         if compliance_flagged is not None:
             query = query.filter(GovernanceEvent.compliance_flagged == compliance_flagged)
         if start_time:
@@ -70,4 +76,4 @@ class EventRepository:
         if end_time:
             query = query.filter(GovernanceEvent.timestamp <= end_time)
 
-        return query.order_by(GovernanceEvent.timestamp.desc()).offset(offset).limit(limit).all()
+        return query.order_by(desc(GovernanceEvent.timestamp)).offset(offset).limit(limit).all()

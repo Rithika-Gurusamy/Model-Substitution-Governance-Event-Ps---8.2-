@@ -1,535 +1,643 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // Dynamic API Base URL setup
-    let API_BASE = '/api/v1';
-    if (window.location.hostname.includes('vercel.app') || window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-        API_BASE = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.RENDER_API_BASE) ? APP_CONFIG.RENDER_API_BASE : 'https://model-substitution-governance-event.onrender.com/api/v1';
+// State & App Data
+let eventsData = [];
+let modelsData = [];
+let agentsData = [];
+let currentOrgName = "Hackathon Demo Org";
+let currentUserName = "Demo Visitor";
+
+// Initialize Supabase Auth Client
+let supabaseClient = null;
+if (typeof supabase !== 'undefined' && APP_CONFIG.SUPABASE_URL && APP_CONFIG.SUPABASE_ANON_KEY) {
+    supabaseClient = supabase.createClient(APP_CONFIG.SUPABASE_URL, APP_CONFIG.SUPABASE_ANON_KEY);
+}
+
+// Global API Fetch Wrapper with Authorization Header
+async function fetchWithAuth(url, options = {}) {
+    options.headers = options.headers || {};
+    
+    // Attach Supabase JWT Session Token if logged in
+    if (supabaseClient) {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session && session.access_token) {
+            options.headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
     }
 
-    // State Variables
-    let eventsData = [];
-    let modelsData = [];
-    let agentsData = [];
+    const response = await fetch(url, options);
+    return response;
+}
 
-    // DOM Elements
-    const eventsTbody = document.getElementById('events-tbody');
-    const riskTbody = document.getElementById('risk-tbody');
-    const complianceTbody = document.getElementById('compliance-tbody');
-    const modelsTbody = document.getElementById('models-tbody');
-    const auditContainer = document.getElementById('audit-results-container');
-    const kpiGrid = document.querySelector('.kpi-grid');
+// Module Explanations
+const helpTexts = {
+    recorder: {
+        title: "Governance Event Recorder Overview",
+        content: `
+            <p><strong>Purpose:</strong> Captures every model substitution as an immutable governance record.</p>
+            <div class="explanation-box margin-top">
+                <h4>Recorded Event Attributes:</h4>
+                <ul style="margin-left: 1.25rem; margin-top: 0.5rem; line-height: 1.6;">
+                    <li><strong>Requested Model:</strong> Target model selected by caller application</li>
+                    <li><strong>Actual Model Used:</strong> Final model routed by LLM Gateway</li>
+                    <li><strong>Substitution Reason:</strong> Cost optimization, Provider unavailability, or Fallback policy</li>
+                    <li><strong>Risk Assessment:</strong> Capability drop calculation based on context window delta</li>
+                    <li><strong>Compliance Flag:</strong> Whitelist violation detection against agent policy</li>
+                </ul>
+            </div>
+        `
+    },
+    risk: {
+        title: "Substitution Risk Assessor Overview",
+        content: `
+            <p><strong>Purpose:</strong> Calculates material capability downgrades when model routing decisions switch models.</p>
+            <div class="explanation-box margin-top">
+                <h4>Context Window Reduction Thresholds:</h4>
+                <ul style="margin-left: 1.25rem; margin-top: 0.5rem; line-height: 1.6;">
+                    <li><strong class="badge risk-low">Low Risk:</strong> &le; 25% Context Capacity Reduction</li>
+                    <li><strong class="badge risk-medium">Medium Risk:</strong> 25.1% - 50% Context Capacity Reduction</li>
+                    <li><strong class="badge risk-high">High Risk:</strong> 50.1% - 75% Context Capacity Reduction</li>
+                    <li><strong class="badge risk-critical">Critical Risk:</strong> &gt; 75% Context Capacity Reduction</li>
+                </ul>
+            </div>
+        `
+    },
+    compliance: {
+        title: "Compliance Flag Engine Overview",
+        content: `
+            <p><strong>Purpose:</strong> Enforces model whitelists mapped to specific AI Agents.</p>
+            <div class="explanation-box margin-top">
+                <h4>Policy Enforcement Logic:</h4>
+                <p class="margin-top">Every incoming substitution event is matched against the agent's pre-approved model list. If the routed model is not whitelisted, the event is automatically flagged with a compliance violation.</p>
+            </div>
+        `
+    },
+    audit: {
+        title: "Retroactive Compliance Audit Overview",
+        content: `
+            <p><strong>Purpose:</strong> Scans historical substitution logs to produce compliance & capability exposure audits.</p>
+            <div class="explanation-box margin-top">
+                <h4>Audit Metrics Computed:</h4>
+                <ul style="margin-left: 1.25rem; margin-top: 0.5rem; line-height: 1.6;">
+                    <li>Total Substitution Events Analyzed</li>
+                    <li>Unapproved Model Routing Count & Flag Rate %</li>
+                    <li>High / Critical Risk Exposure Ratio %</li>
+                </ul>
+            </div>
+        `
+    },
+    models: {
+        title: "Model Capability Profiles Overview",
+        content: `
+            <p><strong>Purpose:</strong> Global reference directory holding context window specifications across top AI model providers.</p>
+        `
+    }
+};
 
+// DOM Initialization
+document.addEventListener('DOMContentLoaded', () => {
+    initAuthListeners();
+    initTabNavigation();
+    initFilterListeners();
+    initModalListeners();
+    initSimulator();
+    initAuditButton();
+    
+    // Initial Auth & Data Load
+    checkAuthSession();
+    loadAllData();
+});
+
+// Supabase Auth Handlers
+async function checkAuthSession() {
+    if (!supabaseClient) return;
+
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    updateAuthUI(session);
+
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+        updateAuthUI(session);
+        loadAllData();
+    });
+}
+
+function updateAuthUI(session) {
+    const btnLogin = document.getElementById('btn-show-login');
+    const btnSignup = document.getElementById('btn-show-signup');
+    const btnLogout = document.getElementById('btn-logout');
+
+    if (session && session.user) {
+        if (btnLogin) btnLogin.style.display = 'none';
+        if (btnSignup) btnSignup.style.display = 'none';
+        if (btnLogout) btnLogout.style.display = 'inline-flex';
+        
+        currentUserName = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
+        document.getElementById('header-user-name').innerText = currentUserName;
+    } else {
+        if (btnLogin) btnLogin.style.display = 'inline-flex';
+        if (btnSignup) btnSignup.style.display = 'inline-flex';
+        if (btnLogout) btnLogout.style.display = 'none';
+        
+        document.getElementById('header-user-name').innerText = "Demo Visitor";
+        document.getElementById('header-org-name').innerText = "Hackathon Demo Org";
+    }
+}
+
+function initAuthListeners() {
+    // Open Modals
+    document.getElementById('btn-show-login')?.addEventListener('click', () => {
+        document.getElementById('login-modal').classList.add('active');
+    });
+    document.getElementById('btn-show-signup')?.addEventListener('click', () => {
+        document.getElementById('signup-modal').classList.add('active');
+    });
+    document.getElementById('login-close-btn')?.addEventListener('click', () => {
+        document.getElementById('login-modal').classList.remove('active');
+    });
+    document.getElementById('signup-close-btn')?.addEventListener('click', () => {
+        document.getElementById('signup-modal').classList.remove('active');
+    });
+
+    // Login Form Submit
+    document.getElementById('login-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        const errDiv = document.getElementById('login-error');
+
+        errDiv.style.display = 'none';
+
+        if (!supabaseClient) {
+            errDiv.innerText = "Supabase client not initialized.";
+            errDiv.style.display = 'block';
+            return;
+        }
+
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) {
+            errDiv.innerText = error.message;
+            errDiv.style.display = 'block';
+        } else {
+            document.getElementById('login-modal').classList.remove('active');
+            loadAllData();
+        }
+    });
+
+    // Signup Form Submit
+    document.getElementById('signup-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fullName = document.getElementById('signup-name').value;
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+        const errDiv = document.getElementById('signup-error');
+
+        errDiv.style.display = 'none';
+
+        if (!supabaseClient) {
+            errDiv.innerText = "Supabase client not initialized.";
+            errDiv.style.display = 'block';
+            return;
+        }
+
+        const { data, error } = await supabaseClient.auth.signUp({
+            email,
+            password,
+            options: { data: { full_name: fullName } }
+        });
+
+        if (error) {
+            errDiv.innerText = error.message;
+            errDiv.style.display = 'block';
+        } else {
+            document.getElementById('signup-modal').classList.remove('active');
+            alert("Account created successfully! Logging you in...");
+            loadAllData();
+        }
+    });
+
+    // Logout
+    document.getElementById('btn-logout')?.addEventListener('click', async () => {
+        if (supabaseClient) {
+            await supabaseClient.auth.signOut();
+            loadAllData();
+        }
+    });
+}
+
+// Fetch & Load All Data
+async function loadAllData() {
+    await fetchUserProfile();
+    await Promise.all([
+        fetchEvents(),
+        fetchModels(),
+        fetchAgents()
+    ]);
+}
+
+async function fetchUserProfile() {
+    try {
+        const res = await fetchWithAuth(`${APP_CONFIG.RENDER_API_BASE}/auth/me`);
+        if (res.ok) {
+            const profile = await res.json();
+            if (profile.organization_name) {
+                currentOrgName = profile.organization_name;
+                document.getElementById('header-org-name').innerText = currentOrgName;
+            }
+            if (profile.full_name) {
+                document.getElementById('header-user-name').innerText = profile.full_name;
+            }
+        }
+    } catch (e) {
+        console.warn("User profile fetch error:", e);
+    }
+}
+
+async function fetchEvents() {
+    try {
+        const res = await fetchWithAuth(`${APP_CONFIG.RENDER_API_BASE}/events?limit=500`);
+        if (!res.ok) throw new Error('API Error');
+        eventsData = await res.json();
+
+        updateHealthStatus(true, true);
+        renderEventsTable();
+        renderRiskTable();
+        updateKPIs();
+        populateAgentFilter();
+    } catch (err) {
+        console.error("Fetch Events Error:", err);
+        updateHealthStatus(false, false);
+    }
+}
+
+async function fetchModels() {
+    try {
+        const res = await fetch(`${APP_CONFIG.RENDER_API_BASE}/models`);
+        if (!res.ok) throw new Error('API Error');
+        modelsData = await res.json();
+        renderModelsTable();
+    } catch (err) {
+        console.error("Fetch Models Error:", err);
+    }
+}
+
+async function fetchAgents() {
+    try {
+        const res = await fetchWithAuth(`${APP_CONFIG.RENDER_API_BASE}/agents`);
+        if (!res.ok) throw new Error('API Error');
+        agentsData = await res.json();
+        renderComplianceTable();
+    } catch (err) {
+        console.error("Fetch Agents Error:", err);
+    }
+}
+
+function updateHealthStatus(backendOk, dbOk) {
     const dotBackend = document.getElementById('dot-backend');
     const textBackend = document.getElementById('text-backend');
     const dotDb = document.getElementById('dot-db');
     const textDb = document.getElementById('text-db');
 
-    const kpiTotal = document.getElementById('kpi-total');
-    const kpiHighRisk = document.getElementById('kpi-high-risk');
-    const kpiViolations = document.getElementById('kpi-violations');
-    const kpiModelsCount = document.getElementById('kpi-models-count');
+    if (backendOk) {
+        dotBackend.className = 'status-dot green';
+        textBackend.innerText = 'Online';
+    } else {
+        dotBackend.className = 'status-dot red';
+        textBackend.innerText = 'Offline';
+    }
 
-    const filterAgent = document.getElementById('filter-agent');
-    const filterReason = document.getElementById('filter-reason');
-    const filterRisk = document.getElementById('filter-risk');
-    const filterCompliance = document.getElementById('filter-compliance');
-    const searchModels = document.getElementById('search-models');
+    if (dbOk) {
+        dotDb.className = 'status-dot green';
+        textDb.innerText = 'Connected';
+    } else {
+        dotDb.className = 'status-dot red';
+        textDb.innerText = 'Disconnected';
+    }
+}
 
-    const btnRefresh = document.getElementById('btn-refresh');
-    const btnOpenSim = document.getElementById('btn-open-sim');
-    const btnRunSimStep = document.getElementById('btn-run-sim-step');
-    const btnRunAudit = document.getElementById('btn-run-audit');
-    const btnGotoIntegration = document.getElementById('btn-goto-integration');
+function updateKPIs() {
+    const total = eventsData.length;
+    const highRisk = eventsData.filter(e => e.risk_level === 'High' || e.risk_level === 'Critical').length;
+    const violations = eventsData.filter(e => e.compliance_flagged).length;
 
-    // Modals
-    const eventModal = document.getElementById('event-modal');
-    const modalCloseBtn = document.getElementById('modal-close-btn');
+    document.getElementById('kpi-total').innerText = total;
+    document.getElementById('kpi-high-risk').innerText = highRisk;
+    document.getElementById('kpi-violations').innerText = violations;
+    if (modelsData.length > 0) {
+        document.getElementById('kpi-models-count').innerText = modelsData.length;
+    }
+}
+
+function populateAgentFilter() {
+    const select = document.getElementById('filter-agent');
+    if (!select) return;
+    const currentVal = select.value;
+    const uniqueAgents = [...new Set(eventsData.map(e => e.agent_id))];
+
+    select.innerHTML = '<option value="">All Agents</option>';
+    uniqueAgents.forEach(agent => {
+        const opt = document.createElement('option');
+        opt.value = agent;
+        opt.innerText = agent;
+        select.appendChild(opt);
+    });
+    select.value = currentVal;
+}
+
+// Render Event Recorder Table
+function renderEventsTable() {
+    const tbody = document.getElementById('events-tbody');
+    if (!tbody) return;
+
+    const agentFilter = document.getElementById('filter-agent')?.value;
+    const reasonFilter = document.getElementById('filter-reason')?.value;
+    const riskFilter = document.getElementById('filter-risk')?.value;
+    const complianceFilter = document.getElementById('filter-compliance')?.value;
+
+    let filtered = eventsData.filter(e => {
+        if (agentFilter && e.agent_id !== agentFilter) return false;
+        if (reasonFilter && e.reason !== reasonFilter) return false;
+        if (riskFilter && e.risk_level !== riskFilter) return false;
+        if (complianceFilter === 'true' && !e.compliance_flagged) return false;
+        if (complianceFilter === 'false' && e.compliance_flagged) return false;
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No governance events match filters.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = filtered.map(e => `
+        <tr>
+            <td class="font-mono text-sm">${new Date(e.timestamp).toLocaleString()}</td>
+            <td><strong>${e.agent_id}</strong></td>
+            <td><span class="model-tag requested">${e.requested_model}</span></td>
+            <td><span class="model-tag actual">${e.actual_model}</span></td>
+            <td><span class="badge reason-${e.reason.toLowerCase()}">${e.reason.toUpperCase()}</span></td>
+            <td><span class="badge risk-${e.risk_level.toLowerCase()}">${e.risk_level.toUpperCase()}</span></td>
+            <td>
+                ${e.compliance_flagged 
+                    ? '<span class="badge status-flagged">VIOLATION FLAGGED</span>' 
+                    : '<span class="badge status-approved">COMPLIANT</span>'}
+            </td>
+            <td>
+                <button class="btn btn-secondary text-sm" onclick="inspectEvent('${e.id}')">Inspect</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Render Risk Assessor Table
+function renderRiskTable() {
+    const tbody = document.getElementById('risk-tbody');
+    if (!tbody) return;
+
+    if (eventsData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No capability risk assessments found.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = eventsData.map(e => `
+        <tr>
+            <td><strong>${e.agent_id}</strong></td>
+            <td><span class="model-tag requested">${e.requested_model}</span></td>
+            <td><span class="model-tag actual">${e.actual_model}</span></td>
+            <td class="font-mono"><strong>${e.context_downgrade_pct}%</strong></td>
+            <td><span class="badge risk-${e.risk_level.toLowerCase()}">${e.risk_level.toUpperCase()}</span></td>
+            <td class="text-sm color-muted">${e.risk_reason}</td>
+        </tr>
+    `).join('');
+}
+
+// Render Compliance Whitelist Table
+function renderComplianceTable() {
+    const tbody = document.getElementById('compliance-tbody');
+    if (!tbody) return;
+
+    if (agentsData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">No agent compliance policies found.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = agentsData.map(a => `
+        <tr>
+            <td><strong>${a.agent_id}</strong></td>
+            <td>${a.agent_name}</td>
+            <td>
+                ${a.approved_models.map(m => `<span class="model-tag approved">${m}</span>`).join(' ')}
+            </td>
+            <td><span class="badge status-approved">WHITELIST ACTIVE</span></td>
+        </tr>
+    `).join('');
+}
+
+// Render Model Profiles Table
+function renderModelsTable() {
+    const tbody = document.getElementById('models-tbody');
+    if (!tbody) return;
+
+    const query = document.getElementById('search-models')?.value?.toLowerCase() || '';
+    let filtered = modelsData.filter(m => m.model_name.toLowerCase().includes(query));
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center">No model profiles match search.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = filtered.map(m => `
+        <tr>
+            <td><strong>${m.model_name}</strong></td>
+            <td class="font-mono">${m.context_window.toLocaleString()} tokens</td>
+            <td><span class="badge status-approved">VERIFIED PROFILE</span></td>
+        </tr>
+    `).join('');
+}
+
+// Event Inspector Modal
+window.inspectEvent = function(eventId) {
+    const event = eventsData.find(e => e.id === eventId);
+    if (!event) return;
+
     const modalContent = document.getElementById('modal-content');
+    modalContent.innerHTML = `
+        <div class="detail-row"><strong>Event ID:</strong> <span class="font-mono">${event.id}</span></div>
+        <div class="detail-row"><strong>Timestamp:</strong> ${new Date(event.timestamp).toLocaleString()}</div>
+        <div class="detail-row"><strong>Agent ID:</strong> ${event.agent_id}</div>
+        <div class="detail-row"><strong>Session ID:</strong> <span class="font-mono">${event.session_id}</span></div>
+        <hr class="divider">
+        <div class="detail-row"><strong>Requested Model:</strong> <span class="model-tag requested">${event.requested_model}</span></div>
+        <div class="detail-row"><strong>Actual Model Used:</strong> <span class="model-tag actual">${event.actual_model}</span></div>
+        <div class="detail-row"><strong>Substitution Reason:</strong> <span class="badge reason-${event.reason.toLowerCase()}">${event.reason.toUpperCase()}</span></div>
+        <hr class="divider">
+        <div class="detail-row"><strong>Capability Risk Level:</strong> <span class="badge risk-${event.risk_level.toLowerCase()}">${event.risk_level.toUpperCase()}</span></div>
+        <div class="detail-row"><strong>Context Reduction:</strong> ${event.context_downgrade_pct}%</div>
+        <div class="explanation-box">${event.risk_reason}</div>
+        <hr class="divider">
+        <div class="detail-row"><strong>Compliance Status:</strong> 
+            ${event.compliance_flagged 
+                ? '<span class="badge status-flagged">VIOLATION FLAGGED</span>' 
+                : '<span class="badge status-approved">COMPLIANT</span>'}
+        </div>
+        ${event.compliance_reason ? `<div class="explanation-box text-danger">${event.compliance_reason}</div>` : ''}
+    `;
 
-    const helpModal = document.getElementById('help-modal');
-    const helpCloseBtn = document.getElementById('help-close-btn');
-    const helpModalTitle = document.getElementById('help-modal-title');
-    const helpModalContent = document.getElementById('help-modal-content');
+    document.getElementById('event-modal').classList.add('active');
+};
 
-    const archModal = document.getElementById('arch-modal');
-    const archCloseBtn = document.getElementById('arch-close-btn');
-    const btnOpenArch = document.getElementById('btn-open-arch');
+// Retroactive Audit Trigger
+function initAuditButton() {
+    document.getElementById('btn-run-audit')?.addEventListener('click', async () => {
+        const container = document.getElementById('audit-results-container');
+        container.innerHTML = '<p>Running retroactive compliance audit across historical substitution logs...</p>';
 
-    // Help Panel Content Definitions
-    const HELP_CONTENT = {
-        recorder: {
-            title: "Governance Event Recorder",
-            body: `
-                <div class="detail-row"><strong>Purpose:</strong> Records every detected model substitution from an enterprise LLM Gateway.</div>
-                <div class="detail-row"><strong>Captured Fields:</strong>
-                    <ul style="margin-left: 1.5rem; margin-top: 0.3rem;">
-                        <li>Requested Model</li>
-                        <li>Actual Model Used</li>
-                        <li>Substitution Reason (Cost, Availability, Policy)</li>
-                        <li>Timestamp</li>
-                        <li>Agent ID</li>
-                        <li>Session ID</li>
-                    </ul>
-                </div>
-                <div class="explanation-box margin-top">
-                    <strong>Why it matters in enterprise governance:</strong><br>
-                    Provides an immutable, auditable event stream for AI routing decisions, enabling compliance teams to track cost-cutting or availability fallbacks across enterprise agents.
-                </div>
-            `
-        },
-        risk: {
-            title: "Substitution Risk Assessor",
-            body: `
-                <div class="detail-row"><strong>Purpose:</strong> Determines whether a model substitution represents a material capability downgrade.</div>
-                <div class="detail-row"><strong>Current Implementation:</strong> Compares Context Window capacity drop between requested and actual models.</div>
-                <div class="detail-row"><strong>Risk Rule Matrix:</strong>
-                    <ul style="margin-left: 1.5rem; margin-top: 0.3rem;">
-                        <li><strong>Low Risk:</strong> &lt; 25% drop in context capacity</li>
-                        <li><strong>Medium Risk:</strong> 25% – 50% drop in context capacity</li>
-                        <li><strong>High Risk:</strong> 50% – 75% drop in context capacity</li>
-                        <li><strong>Critical Risk:</strong> &ge; 75% drop (Material Capability Downgrade)</li>
-                    </ul>
-                </div>
-                <div class="explanation-box margin-top">
-                    <strong>Future Expansion:</strong> Guardrail behavior benchmarking, bias score comparisons, reasoning evaluations, and safety benchmarks.
-                </div>
-            `
-        },
-        compliance: {
-            title: "Compliance Flag Engine",
-            body: `
-                <div class="detail-row"><strong>Purpose:</strong> Evaluates agent compliance policies against approved model whitelists.</div>
-                <div class="detail-row"><strong>Policy Enforcement:</strong> If an agent's compliance record specifies an approved model list, routing to an unapproved model automatically sets a <code>compliance_flagged = True</code> violation flag requiring manual review.</div>
-                <div class="explanation-box margin-top">
-                    <strong>Why it matters:</strong> Prevents agents handling sensitive PII, HR data, or financial risk from being quietly routed to lower-tier unapproved model providers.
-                </div>
-            `
-        },
-        audit: {
-            title: "Retroactive Compliance Audit",
-            body: `
-                <div class="detail-row"><strong>Purpose:</strong> Computes total compliance exposure across historical substitution logs.</div>
-                <div class="detail-row"><strong>Calculated Metrics:</strong>
-                    <ul style="margin-left: 1.5rem; margin-top: 0.3rem;">
-                        <li>Total requests served by unapproved models</li>
-                        <li>Compliance violation rate (%)</li>
-                        <li>High-risk capability exposure ratio (%)</li>
-                    </ul>
-                </div>
-                <div class="explanation-box margin-top">
-                    <strong>Bonus Requirement:</strong> Enables compliance auditors to generate historical impact reports across arbitrary date ranges.
-                </div>
-            `
-        },
-        models: {
-            title: "Model Capability Profiles",
-            body: `
-                <div class="detail-row"><strong>Purpose:</strong> Central directory of model capability specifications.</div>
-                <div class="detail-row"><strong>Data Sources:</strong> Sourced directly from official documentation (OpenAI, Anthropic, Google, Meta, DeepSeek, Mistral, Cohere, xAI, Microsoft).</div>
-                <div class="explanation-box margin-top">
-                    Used by the Risk Assessor engine to perform deterministic capability comparison lookups.
-                </div>
-            `
-        }
-    };
-
-    // Tab Navigation & KPI Card visibility management
-    function handleTabSwitch(tabId) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
-        const targetBtn = document.querySelector(`[data-tab="${tabId}"]`);
-        const targetContent = document.getElementById(tabId);
-
-        if (targetBtn) targetBtn.classList.add('active');
-        if (targetContent) targetContent.classList.add('active');
-
-        // Hide 4 KPI cards when on Integration tab
-        if (kpiGrid) {
-            if (tabId === 'tab-integration') {
-                kpiGrid.style.display = 'none';
-            } else {
-                kpiGrid.style.display = 'grid';
-            }
-        }
-    }
-
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            handleTabSwitch(btn.dataset.tab);
-        });
-    });
-
-    if (btnGotoIntegration) {
-        btnGotoIntegration.addEventListener('click', () => {
-            handleTabSwitch('tab-integration');
-            window.scrollTo({ top: 300, behavior: 'smooth' });
-        });
-    }
-
-    // Initialize KPI visibility (Hidden on start since Integration is active)
-    if (kpiGrid) kpiGrid.style.display = 'none';
-
-    // Modal Close handlers
-    modalCloseBtn.addEventListener('click', () => eventModal.classList.remove('active'));
-    eventModal.addEventListener('click', (e) => { if (e.target === eventModal) eventModal.classList.remove('active'); });
-
-    helpCloseBtn.addEventListener('click', () => helpModal.classList.remove('active'));
-    helpModal.addEventListener('click', (e) => { if (e.target === helpModal) helpModal.classList.remove('active'); });
-
-    archCloseBtn.addEventListener('click', () => archModal.classList.remove('active'));
-    archModal.addEventListener('click', (e) => { if (e.target === archModal) archModal.classList.remove('active'); });
-
-    if (btnOpenArch) {
-        btnOpenArch.addEventListener('click', () => archModal.classList.add('active'));
-    }
-
-    // Attach Help Modal Listeners
-    document.querySelectorAll('.help-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const key = btn.dataset.help;
-            if (HELP_CONTENT[key]) {
-                helpModalTitle.innerText = HELP_CONTENT[key].title;
-                helpModalContent.innerHTML = HELP_CONTENT[key].body;
-                helpModal.classList.add('active');
-            }
-        });
-    });
-
-    // Refresh Data
-    btnRefresh.addEventListener('click', loadAllData);
-    
-    async function runSimulator() {
-        if (btnOpenSim) btnOpenSim.innerText = 'Simulating...';
         try {
-            const testPayloads = [
-                { requested_model: "GPT-5", actual_model: "GPT-4o Mini", reason: "cost", agent_id: "HR-Agent", session_id: "sim-" + Math.floor(Math.random() * 10000) },
-                { requested_model: "Claude Opus 4", actual_model: "Gemini 1.5 Flash", reason: "availability", agent_id: "Finance-Bot", session_id: "sim-" + Math.floor(Math.random() * 10000) },
-                { requested_model: "GPT-5", actual_model: "GPT-3.5 Turbo", reason: "cost", agent_id: "HR-Agent", session_id: "sim-" + Math.floor(Math.random() * 10000) },
-                { requested_model: "Claude Opus 4", actual_model: "Gemini 1.5 Pro", reason: "availability", agent_id: "Finance-Bot", session_id: "sim-" + Math.floor(Math.random() * 10000) }
-            ];
+            const res = await fetchWithAuth(`${APP_CONFIG.RENDER_API_BASE}/compliance/audit`);
+            if (!res.ok) throw new Error("Audit failed");
+            const audit = await res.json();
 
-            for (const p of testPayloads) {
-                await fetch(`${API_BASE}/events`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(p)
-                });
-            }
-            await loadAllData();
-        } catch (e) {
-            console.error('Simulator error:', e);
-        } finally {
-            if (btnOpenSim) btnOpenSim.innerText = 'Gateway Simulator';
-        }
-    }
-
-    if (btnOpenSim) btnOpenSim.addEventListener('click', runSimulator);
-    if (btnRunSimStep) btnRunSimStep.addEventListener('click', runSimulator);
-
-    // Run Retroactive Audit Button
-    btnRunAudit.addEventListener('click', loadAuditReport);
-
-    // Filter Listeners
-    [filterAgent, filterReason, filterRisk, filterCompliance].forEach(elem => {
-        elem.addEventListener('change', renderEventsTable);
-    });
-
-    if (searchModels) {
-        searchModels.addEventListener('input', renderModelsTable);
-    }
-
-    // Initial Load
-    loadAllData();
-
-    async function loadAllData() {
-        await Promise.all([
-            fetchEvents(),
-            fetchModels(),
-            fetchAgents()
-        ]);
-        updateKPIs();
-        renderEventsTable();
-        renderRiskTable();
-        renderComplianceTable();
-        renderModelsTable();
-        populateAgentFilter();
-    }
-
-    async function fetchEvents() {
-        try {
-            const res = await fetch(`${API_BASE}/events?limit=200`);
-            if (res.ok) {
-                eventsData = await res.json();
-                updateHealthStatus(true, true);
-            } else {
-                updateHealthStatus(false, false);
-            }
-        } catch (err) {
-            console.error('Error fetching events:', err);
-            updateHealthStatus(false, false);
-        }
-    }
-
-    async function fetchModels() {
-        try {
-            const res = await fetch(`${API_BASE}/models`);
-            if (res.ok) {
-                modelsData = await res.json();
-            }
-        } catch (err) {
-            console.error('Error fetching models:', err);
-        }
-    }
-
-    async function fetchAgents() {
-        try {
-            const res = await fetch(`${API_BASE}/agents`);
-            if (res.ok) {
-                agentsData = await res.json();
-            }
-        } catch (err) {
-            console.error('Error fetching agents:', err);
-        }
-    }
-
-    function updateHealthStatus(backendOk, dbOk) {
-        if (dotBackend && textBackend) {
-            dotBackend.className = backendOk ? 'status-dot green' : 'status-dot red';
-            textBackend.innerText = backendOk ? 'Online' : 'Offline';
-        }
-        if (dotDb && textDb) {
-            dotDb.className = dbOk ? 'status-dot green' : 'status-dot red';
-            textDb.innerText = dbOk ? 'Connected' : 'Disconnected';
-        }
-    }
-
-    function updateKPIs() {
-        kpiTotal.innerText = eventsData.length;
-        const highRiskCount = eventsData.filter(e => e.risk_level === 'High' || e.risk_level === 'Critical').length;
-        kpiHighRisk.innerText = highRiskCount;
-        const violationsCount = eventsData.filter(e => e.compliance_flagged).length;
-        kpiViolations.innerText = violationsCount;
-        kpiModelsCount.innerText = modelsData.length > 0 ? modelsData.length : '50+';
-    }
-
-    function populateAgentFilter() {
-        const currentSelected = filterAgent.value;
-        filterAgent.innerHTML = '<option value="">All Agents</option>';
-        const agentIds = [...new Set(eventsData.map(e => e.agent_id))];
-        agentIds.forEach(id => {
-            const opt = document.createElement('option');
-            opt.value = id;
-            opt.innerText = id;
-            if (id === currentSelected) opt.selected = true;
-            filterAgent.appendChild(opt);
-        });
-    }
-
-    function renderEventsTable() {
-        const agent = filterAgent.value;
-        const reason = filterReason.value.toLowerCase();
-        const risk = filterRisk.value;
-        const compliance = filterCompliance.value;
-
-        const filtered = eventsData.filter(e => {
-            if (agent && e.agent_id !== agent) return false;
-            if (reason && e.reason.toLowerCase() !== reason) return false;
-            if (risk && e.risk_level !== risk) return false;
-            if (compliance === 'true' && !e.compliance_flagged) return false;
-            if (compliance === 'false' && e.compliance_flagged) return false;
-            return true;
-        });
-
-        if (filtered.length === 0) {
-            eventsTbody.innerHTML = `<tr><td colspan="8" class="text-center">No governance events recorded yet. Click "Gateway Simulator" to generate live events.</td></tr>`;
-            return;
-        }
-
-        eventsTbody.innerHTML = filtered.map(e => {
-            const dateStr = new Date(e.timestamp).toLocaleString();
-            const riskBadgeClass = `badge risk-${e.risk_level.toLowerCase()}`;
-            const compBadgeClass = e.compliance_flagged ? 'badge status-flagged' : 'badge status-approved';
-            const compText = e.compliance_flagged ? 'Violation Flagged' : 'Compliant';
-
-            return `
-                <tr>
-                    <td class="font-mono text-sm">${dateStr}</td>
-                    <td><strong>${escapeHtml(e.agent_id)}</strong></td>
-                    <td><span class="model-tag requested">${escapeHtml(e.requested_model)}</span></td>
-                    <td><span class="model-tag actual">${escapeHtml(e.actual_model)}</span></td>
-                    <td><span class="badge reason-${e.reason.toLowerCase()}">${escapeHtml(e.reason.toUpperCase())}</span></td>
-                    <td><span class="${riskBadgeClass}">${escapeHtml(e.risk_level)}</span></td>
-                    <td><span class="${compBadgeClass}">${compText}</span></td>
-                    <td>
-                        <button class="btn btn-secondary text-sm" onclick="window.inspectEvent('${e.id}')">Inspect</button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    function renderRiskTable() {
-        if (!riskTbody) return;
-        if (eventsData.length === 0) {
-            riskTbody.innerHTML = `<tr><td colspan="6" class="text-center">No substitution events recorded yet.</td></tr>`;
-            return;
-        }
-
-        riskTbody.innerHTML = eventsData.map(e => {
-            const riskBadgeClass = `badge risk-${e.risk_level.toLowerCase()}`;
-            return `
-                <tr>
-                    <td><strong>${escapeHtml(e.agent_id)}</strong></td>
-                    <td><span class="model-tag requested">${escapeHtml(e.requested_model)}</span></td>
-                    <td><span class="model-tag actual">${escapeHtml(e.actual_model)}</span></td>
-                    <td><span class="font-mono">${e.context_downgrade_pct}%</span></td>
-                    <td><span class="${riskBadgeClass}">${escapeHtml(e.risk_level)}</span></td>
-                    <td class="text-sm">${escapeHtml(e.risk_reason)}</td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    function renderComplianceTable() {
-        if (!complianceTbody) return;
-        if (agentsData.length === 0) {
-            complianceTbody.innerHTML = `<tr><td colspan="4" class="text-center">No agent compliance policies configured.</td></tr>`;
-            return;
-        }
-
-        complianceTbody.innerHTML = agentsData.map(a => `
-            <tr>
-                <td><strong>${escapeHtml(a.agent_id)}</strong></td>
-                <td>${escapeHtml(a.agent_name)}</td>
-                <td>
-                    ${a.approved_models.map(m => `<span class="model-tag approved">${escapeHtml(m)}</span>`).join(' ')}
-                </td>
-                <td><span class="badge status-approved">Whitelist Policy Active</span></td>
-            </tr>
-        `).join('');
-    }
-
-    function renderModelsTable() {
-        const query = (searchModels ? searchModels.value : '').toLowerCase();
-        const filtered = modelsData.filter(m => m.model_name.toLowerCase().includes(query));
-
-        if (filtered.length === 0) {
-            modelsTbody.innerHTML = `<tr><td colspan="3" class="text-center">No model profiles found.</td></tr>`;
-            return;
-        }
-
-        modelsTbody.innerHTML = filtered.map(m => `
-            <tr>
-                <td><strong>${escapeHtml(m.model_name)}</strong></td>
-                <td><span class="font-mono">${m.context_window.toLocaleString()} tokens</span></td>
-                <td><span class="badge status-approved">Context Profile Verified</span></td>
-            </tr>
-        `).join('');
-    }
-
-    async function loadAuditReport() {
-        auditContainer.innerHTML = '<p class="subtitle">Computing retroactive audit across historical records...</p>';
-        try {
-            const res = await fetch(`${API_BASE}/compliance/audit`);
-            if (res.ok) {
-                const data = await res.json();
-                auditContainer.innerHTML = `
-                    <div class="kpi-grid">
-                        <div class="kpi-card">
-                            <div class="kpi-title">EVENTS ANALYZED</div>
-                            <div class="kpi-value">${data.total_events_analyzed}</div>
-                        </div>
-                        <div class="kpi-card danger">
-                            <div class="kpi-title">UNAPPROVED REQUESTS</div>
-                            <div class="kpi-value">${data.total_unapproved_requests}</div>
-                            <div class="kpi-sub">${data.compliance_flag_rate_pct}% Violation Rate</div>
-                        </div>
-                        <div class="kpi-card warning">
-                            <div class="kpi-title">HIGH RISK EXPOSURE</div>
-                            <div class="kpi-value">${data.high_risk_substitutions}</div>
-                            <div class="kpi-sub">${data.high_risk_exposure_pct}% Exposure Ratio</div>
-                        </div>
+            container.innerHTML = `
+                <div class="kpi-grid margin-top" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                    <div class="kpi-card">
+                        <div class="kpi-title">ANALYZED EVENTS</div>
+                        <div class="kpi-value">${audit.total_events_analyzed}</div>
                     </div>
-                    ${data.unapproved_events.length > 0 ? `
-                        <h3 class="margin-top">Flagged Compliance Violation Events</h3>
-                        <div class="table-container">
+                    <div class="kpi-card">
+                        <div class="kpi-title">UNAPPROVED REQUESTS</div>
+                        <div class="kpi-value text-danger">${audit.total_unapproved_requests}</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-title">FLAG RATE %</div>
+                        <div class="kpi-value text-danger">${audit.compliance_flag_rate_pct}%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-title">HIGH RISK EXPOSURE</div>
+                        <div class="kpi-value">${audit.high_risk_exposure_pct}%</div>
+                    </div>
+                </div>
+
+                <div class="margin-top">
+                    <h4>Audit Log Details (Flagged Substitutions)</h4>
+                    ${audit.unapproved_events.length === 0 ? '<p class="text-success margin-top">✔ Zero compliance violations found in historical logs.</p>' : `
+                        <div class="table-container margin-top">
                             <table class="data-table">
                                 <thead>
                                     <tr>
+                                        <th>Timestamp</th>
                                         <th>Agent ID</th>
                                         <th>Requested</th>
                                         <th>Actual Used</th>
-                                        <th>Compliance Reason</th>
+                                        <th>Compliance Audit Violation Reason</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    ${data.unapproved_events.map(ev => `
+                                    ${audit.unapproved_events.map(u => `
                                         <tr>
-                                            <td><strong>${escapeHtml(ev.agent_id)}</strong></td>
-                                            <td>${escapeHtml(ev.requested_model)}</td>
-                                            <td>${escapeHtml(ev.actual_model)}</td>
-                                            <td class="text-danger">${escapeHtml(ev.compliance_reason)}</td>
+                                            <td class="font-mono text-sm">${new Date(u.timestamp).toLocaleString()}</td>
+                                            <td><strong>${u.agent_id}</strong></td>
+                                            <td><span class="model-tag requested">${u.requested_model}</span></td>
+                                            <td><span class="model-tag actual">${u.actual_model}</span></td>
+                                            <td class="text-danger text-sm">${u.compliance_reason}</td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
                             </table>
                         </div>
-                    ` : '<p class="subtitle text-success">No compliance violations detected in recent event logs.</p>'}
-                `;
+                    `}
+                </div>
+            `;
+        } catch (err) {
+            container.innerHTML = `<p class="text-danger">Audit Error: ${err.message}</p>`;
+        }
+    });
+}
+
+// Navigation & Modals
+function initTabNavigation() {
+    const buttons = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    const kpiGrid = document.querySelector('.kpi-grid');
+
+    buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            buttons.forEach(b => b.classList.remove('active'));
+            contents.forEach(c => c.classList.remove('active'));
+
+            btn.classList.add('active');
+            const targetId = btn.getAttribute('data-tab');
+            document.getElementById(targetId)?.classList.add('active');
+
+            if (kpiGrid) {
+                kpiGrid.style.display = (targetId === 'tab-integration') ? 'none' : 'grid';
+            }
+        });
+    });
+
+    document.getElementById('btn-goto-integration')?.addEventListener('click', () => {
+        document.querySelector('.tab-btn[data-tab="tab-integration"]')?.click();
+    });
+}
+
+function initFilterListeners() {
+    ['filter-agent', 'filter-reason', 'filter-risk', 'filter-compliance'].forEach(id => {
+        document.getElementById(id)?.addEventListener('change', renderEventsTable);
+    });
+    document.getElementById('search-models')?.addEventListener('input', renderModelsTable);
+    document.getElementById('btn-refresh')?.addEventListener('click', loadAllData);
+}
+
+function initModalListeners() {
+    document.getElementById('modal-close-btn')?.addEventListener('click', () => {
+        document.getElementById('event-modal').classList.remove('active');
+    });
+
+    document.getElementById('btn-open-arch')?.addEventListener('click', () => {
+        document.getElementById('arch-modal').classList.add('active');
+    });
+    document.getElementById('arch-close-btn')?.addEventListener('click', () => {
+        document.getElementById('arch-modal').classList.remove('active');
+    });
+
+    document.querySelectorAll('.help-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const helpKey = btn.getAttribute('data-help');
+            if (helpTexts[helpKey]) {
+                document.getElementById('help-modal-title').innerText = helpTexts[helpKey].title;
+                document.getElementById('help-modal-content').innerHTML = helpTexts[helpKey].content;
+                document.getElementById('help-modal').classList.add('active');
+            }
+        });
+    });
+
+    document.getElementById('help-close-btn')?.addEventListener('click', () => {
+        document.getElementById('help-modal').classList.remove('active');
+    });
+}
+
+// Live Gateway Traffic Simulator
+function initSimulator() {
+    const runSim = async () => {
+        const sampleEvents = [
+            { requested_model: "GPT-5", actual_model: "GPT-4o Mini", reason: "cost", agent_id: "HR-Agent", session_id: "sess-sim-" + Math.floor(Math.random()*1000) },
+            { requested_model: "Claude 3.5 Sonnet", actual_model: "Claude 3 Haiku", reason: "availability", agent_id: "Finance-Bot", session_id: "sess-sim-" + Math.floor(Math.random()*1000) },
+            { requested_model: "Gemini 1.5 Pro", actual_model: "Gemini 1.5 Flash", reason: "cost", agent_id: "Support-Router", session_id: "sess-sim-" + Math.floor(Math.random()*1000) }
+        ];
+
+        const payload = sampleEvents[Math.floor(Math.random() * sampleEvents.length)];
+
+        try {
+            const res = await fetchWithAuth(`${APP_CONFIG.RENDER_API_BASE}/events`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                alert(`Simulated Substitution Event Sent!\nRequested: ${payload.requested_model} → Actual: ${payload.actual_model}`);
+                loadAllData();
             }
         } catch (e) {
-            console.error('Audit report error:', e);
-            auditContainer.innerHTML = '<p class="subtitle text-danger">Failed to generate audit report.</p>';
+            alert("Simulation failed: " + e.message);
         }
-    }
-
-    // EXPANDED SHOWCASE "INSPECT" EVENT DETAIL MODAL
-    window.inspectEvent = function(eventId) {
-        const ev = eventsData.find(e => e.id === eventId);
-        if (!ev) return;
-
-        // Context capacities lookup
-        const reqModelObj = modelsData.find(m => m.model_name === ev.requested_model);
-        const actModelObj = modelsData.find(m => m.model_name === ev.actual_model);
-
-        const reqCap = reqModelObj ? reqModelObj.context_window.toLocaleString() + ' tokens' : 'Unknown';
-        const actCap = actModelObj ? actModelObj.context_window.toLocaleString() + ' tokens' : 'Unknown';
-
-        modalContent.innerHTML = `
-            <div class="detail-row"><strong>Event ID:</strong> <span class="font-mono">${ev.id}</span></div>
-            <div class="detail-row"><strong>Timestamp:</strong> ${new Date(ev.timestamp).toLocaleString()}</div>
-            <div class="detail-row"><strong>Agent ID:</strong> <strong>${escapeHtml(ev.agent_id)}</strong></div>
-            <div class="detail-row"><strong>Session ID:</strong> <span class="font-mono">${escapeHtml(ev.session_id)}</span></div>
-            <hr class="divider"/>
-            
-            <div class="detail-row"><strong>Requested Model:</strong> <span class="model-tag requested">${escapeHtml(ev.requested_model)}</span></div>
-            <div class="detail-row"><strong>Actual Model Used:</strong> <span class="model-tag actual">${escapeHtml(ev.actual_model)}</span></div>
-            <div class="detail-row"><strong>Substitution Reason:</strong> <span class="badge reason-${ev.reason.toLowerCase()}">${escapeHtml(ev.reason.toUpperCase())}</span></div>
-            <hr class="divider"/>
-            
-            <div class="detail-row"><strong>Capability Comparison (Context Window):</strong></div>
-            <div class="explanation-box">
-                <div>Requested Model Capacity: <strong>${reqCap}</strong></div>
-                <div>Actual Model Used Capacity: <strong>${actCap}</strong></div>
-                <div class="margin-top"><strong>Percentage Downgrade: ${ev.context_downgrade_pct}% Reduction</strong></div>
-            </div>
-            
-            <div class="detail-row margin-top"><strong>Risk Assessment Level:</strong> <span class="badge risk-${ev.risk_level.toLowerCase()}">${escapeHtml(ev.risk_level)}</span></div>
-            <div class="explanation-box">${escapeHtml(ev.risk_reason)}</div>
-            <hr class="divider"/>
-            
-            <div class="detail-row"><strong>Compliance Status:</strong> ${ev.compliance_flagged ? '<span class="badge status-flagged">VIOLATION FLAGGED</span>' : '<span class="badge status-approved">COMPLIANT</span>'}</div>
-            ${ev.compliance_reason ? `<div class="explanation-box text-danger"><strong>Compliance Violation Reason:</strong><br>${escapeHtml(ev.compliance_reason)}</div>` : '<div class="explanation-box text-success">Substituted model is in the agent\'s approved model whitelist policy.</div>'}
-        `;
-        eventModal.classList.add('active');
     };
 
-    function escapeHtml(str) {
-        if (!str) return '';
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
-    }
-});
+    document.getElementById('btn-open-sim')?.addEventListener('click', runSim);
+    document.getElementById('btn-run-sim-step')?.addEventListener('click', runSim);
+}

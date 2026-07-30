@@ -7,55 +7,82 @@ from backend.app.database import Base
 def generate_uuid():
     return str(uuid.uuid4())
 
+class Organization(Base):
+    __tablename__ = "organizations"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    organization_name = Column(String(255), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    user_profiles = relationship("UserProfile", back_populates="organization", cascade="all, delete-orphan")
+    agents = relationship("Agent", back_populates="organization", cascade="all, delete-orphan")
+    events = relationship("GovernanceEvent", back_populates="organization", cascade="all, delete-orphan")
+
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    auth_user_id = Column(String(255), nullable=False, index=True)
+    organization_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    full_name = Column(String(255), nullable=False)
+    role = Column(String(50), default="Compliance Officer")
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    organization = relationship("Organization", back_populates="user_profiles")
+
 class ModelProfile(Base):
     __tablename__ = "model_profiles"
 
-    id = Column(String(36), primary_key=True, default=generate_uuid)
-    model_name = Column(String(100), unique=True, nullable=False, index=True)
+    id = Column(String, primary_key=True, default=generate_uuid)
+    model_name = Column(String, unique=True, index=True, nullable=False)
     context_window = Column(Integer, nullable=False)
-    guardrail_level = Column(String(50), nullable=True, default="Medium")
-    bias_score = Column(Float, nullable=True, default=5.0)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    guardrail_level = Column(String, default="Standard")
+    bias_score = Column(Float, default=0.0)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 class Agent(Base):
     __tablename__ = "agents"
 
-    id = Column(String(36), primary_key=True, default=generate_uuid)
-    agent_id = Column(String(100), unique=True, nullable=False, index=True)
-    agent_name = Column(String(150), nullable=False)
-    description = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    id = Column(String, primary_key=True, default=generate_uuid)
+    agent_id = Column(String, index=True, nullable=False)
+    agent_name = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    organization_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
+    # Relationships
+    organization = relationship("Organization", back_populates="agents")
     approved_models = relationship("ApprovedModel", back_populates="agent", cascade="all, delete-orphan")
-    events = relationship("GovernanceEvent", back_populates="agent")
 
 class ApprovedModel(Base):
     __tablename__ = "approved_models"
 
-    id = Column(String(36), primary_key=True, default=generate_uuid)
-    agent_db_id = Column(String(36), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False)
-    model_name = Column(String(100), nullable=False)
+    id = Column(String, primary_key=True, default=generate_uuid)
+    agent_db_id = Column(String, ForeignKey("agents.id", ondelete="CASCADE"), nullable=False)
+    model_name = Column(String, nullable=False)
 
     agent = relationship("Agent", back_populates="approved_models")
 
 class GovernanceEvent(Base):
     __tablename__ = "governance_events"
 
-    id = Column(String(36), primary_key=True, default=generate_uuid)
-    requested_model = Column(String(100), nullable=False, index=True)
-    actual_model = Column(String(100), nullable=False, index=True)
-    reason = Column(String(50), nullable=False, index=True)  # cost, availability, policy
-    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
-    agent_id = Column(String(100), ForeignKey("agents.agent_id"), nullable=False, index=True)
-    session_id = Column(String(100), nullable=False, index=True)
-
-    # Risk Assessor Output
-    risk_level = Column(String(20), nullable=False, default="Low", index=True) # Low, Medium, High, Critical
+    id = Column(String, primary_key=True, default=generate_uuid)
+    requested_model = Column(String, nullable=False, index=True)
+    actual_model = Column(String, nullable=False, index=True)
+    reason = Column(String, nullable=False, index=True)
+    agent_id = Column(String, nullable=False, index=True)
+    session_id = Column(String, nullable=False)
+    
+    risk_level = Column(String, nullable=False, index=True)
     risk_reason = Column(Text, nullable=False)
-    context_downgrade_pct = Column(Float, nullable=False, default=0.0)
-
-    # Compliance Flag Engine Output
-    compliance_flagged = Column(Boolean, nullable=False, default=False, index=True)
+    context_downgrade_pct = Column(Float, default=0.0)
+    
+    compliance_flagged = Column(Boolean, default=False, index=True)
     compliance_reason = Column(Text, nullable=True)
 
-    agent = relationship("Agent", back_populates="events")
+    organization_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True)
+    timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+
+    organization = relationship("Organization", back_populates="events")

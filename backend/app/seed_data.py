@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
-from backend.app.models.models import ModelProfile, Agent, ApprovedModel, GovernanceEvent
+from backend.app.models.models import Organization, ModelProfile, Agent, ApprovedModel, GovernanceEvent
+
+DEFAULT_DEMO_ORG_ID = "a0000000-0000-0000-0000-000000000001"
 
 SEED_MODELS = [
     # OpenAI Series
@@ -101,7 +103,14 @@ SEED_AGENTS = [
 ]
 
 def seed_database(db: Session):
-    # Seed Models
+    # Seed Default Organization
+    demo_org = db.query(Organization).filter(Organization.id == DEFAULT_DEMO_ORG_ID).first()
+    if not demo_org:
+        demo_org = Organization(id=DEFAULT_DEMO_ORG_ID, organization_name="Hackathon Demo Org")
+        db.add(demo_org)
+        db.commit()
+
+    # Seed Models (Global)
     for model_data in SEED_MODELS:
         existing = db.query(ModelProfile).filter(ModelProfile.model_name == model_data["model_name"]).first()
         if not existing:
@@ -111,14 +120,15 @@ def seed_database(db: Session):
             ))
     db.commit()
 
-    # Seed Agents & Approved Models
+    # Seed Agents & Approved Models for Default Demo Org
     for agent_data in SEED_AGENTS:
         existing_agent = db.query(Agent).filter(Agent.agent_id == agent_data["agent_id"]).first()
         if not existing_agent:
             agent_obj = Agent(
                 agent_id=agent_data["agent_id"],
                 agent_name=agent_data["agent_name"],
-                description=agent_data["description"]
+                description=agent_data["description"],
+                organization_id=DEFAULT_DEMO_ORG_ID
             )
             db.add(agent_obj)
             db.commit()
@@ -127,8 +137,11 @@ def seed_database(db: Session):
             for m_name in agent_data["approved_models"]:
                 db.add(ApprovedModel(agent_db_id=agent_obj.id, model_name=m_name))
             db.commit()
+        elif not existing_agent.organization_id:
+            existing_agent.organization_id = DEFAULT_DEMO_ORG_ID
+            db.commit()
 
-    # Pre-seed initial demonstration events so recruiters immediately see live data!
+    # Pre-seed initial demonstration events attached to Hackathon Demo Org
     existing_events_count = db.query(GovernanceEvent).count()
     if existing_events_count == 0:
         now = datetime.now(timezone.utc)
@@ -199,7 +212,12 @@ def seed_database(db: Session):
                 context_downgrade_pct=se["context_downgrade_pct"],
                 compliance_flagged=se["compliance_flagged"],
                 compliance_reason=se["compliance_reason"],
+                organization_id=DEFAULT_DEMO_ORG_ID,
                 timestamp=se["timestamp"]
             )
             db.add(event_obj)
+        db.commit()
+    else:
+        # Update any events missing organization_id
+        db.query(GovernanceEvent).filter(GovernanceEvent.organization_id.is_(None)).update({"organization_id": DEFAULT_DEMO_ORG_ID})
         db.commit()

@@ -1,8 +1,10 @@
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from backend.app.database import get_db
+from backend.app.auth import get_current_user_and_org
+from backend.app.models.models import UserProfile
 from backend.app.schemas.schemas import SubstitutionEventCreate, GovernanceEventResponse
 from backend.app.repositories.event_repository import EventRepository
 from backend.app.services.risk_assessor import RiskAssessor
@@ -13,12 +15,10 @@ router = APIRouter(prefix="/events", tags=["Governance Events"])
 @router.post("", response_model=GovernanceEventResponse, status_code=status.HTTP_201_CREATED)
 def record_substitution_event(
     payload: SubstitutionEventCreate,
+    auth_data: Tuple[Optional[UserProfile], str] = Depends(get_current_user_and_org),
     db: Session = Depends(get_db)
 ):
-    """
-    Ingest a model substitution event from the Interceptor.
-    Performs real-time Capability Risk Assessment and Compliance Whitelist checking.
-    """
+    _, org_id = auth_data
     risk_assessor = RiskAssessor(db)
     compliance_engine = ComplianceEngine(db)
     event_repo = EventRepository(db)
@@ -29,13 +29,14 @@ def record_substitution_event(
         payload.actual_model
     )
 
-    # 2. Evaluate Agent Compliance Whitelist
+    # 2. Evaluate Agent Compliance Whitelist for Organization
     compliance_flagged, compliance_reason = compliance_engine.evaluate_compliance(
         payload.agent_id,
-        payload.actual_model
+        payload.actual_model,
+        organization_id=org_id
     )
 
-    # 3. Persist Governance Event Record
+    # 3. Persist Governance Event Record under Organization
     event = event_repo.create(
         requested_model=payload.requested_model,
         actual_model=payload.actual_model,
@@ -47,6 +48,7 @@ def record_substitution_event(
         context_downgrade_pct=downgrade_pct,
         compliance_flagged=compliance_flagged,
         compliance_reason=compliance_reason,
+        organization_id=org_id,
         timestamp=payload.timestamp
     )
 
@@ -62,11 +64,10 @@ def query_events(
     end_time: Optional[datetime] = Query(None, description="ISO End Timestamp"),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
+    auth_data: Tuple[Optional[UserProfile], str] = Depends(get_current_user_and_org),
     db: Session = Depends(get_db)
 ):
-    """
-    Query governance event logs with optional multi-attribute filters.
-    """
+    _, org_id = auth_data
     event_repo = EventRepository(db)
     return event_repo.filter_events(
         agent_id=agent_id,
@@ -75,15 +76,13 @@ def query_events(
         compliance_flagged=compliance_flagged,
         start_time=start_time,
         end_time=end_time,
+        organization_id=org_id,
         limit=limit,
         offset=offset
     )
 
 @router.get("/{id}", response_model=GovernanceEventResponse)
 def get_event_by_id(id: str, db: Session = Depends(get_db)):
-    """
-    Retrieve details for a single governance event record.
-    """
     event_repo = EventRepository(db)
     event = event_repo.get_by_id(id)
     if not event:

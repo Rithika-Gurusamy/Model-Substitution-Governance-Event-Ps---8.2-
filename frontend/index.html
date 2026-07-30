@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Model Substitution Governance Tracker - Enterprise Platform</title>
+    <title>Model Substitution Governance Tracker - Multi-Tenant SaaS Platform</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <!-- Supabase Auth Client SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <!-- Top Product Landing Header -->
@@ -19,26 +21,31 @@
                     <h1>Model Substitution Governance Tracker</h1>
                 </div>
                 <div class="product-subtitle">
-                    Enterprise Governance Platform for Monitoring, Recording, Risk Assessing, and Auditing LLM Gateway Model Substitutions
+                    Enterprise Multi-Tenant SaaS Platform for Monitoring, Recording, Risk Assessing, and Auditing LLM Gateway Model Substitutions
                 </div>
                 <div class="product-onboarding-text">
                     Integrate the lightweight Governance Interceptor SDK into your LLM Gateway. Every model substitution is automatically recorded, risk assessed, and audited in real time.
                 </div>
             </div>
 
-            <!-- Enterprise System Health Status Bar -->
+            <!-- Enterprise System Health & Auth Status Bar -->
             <div class="system-health-bar">
                 <div class="health-item">
-                    <span>Backend</span>
+                    <span>Org:</span>
+                    <strong id="header-org-name" style="color: #0f172a;">Hackathon Demo Org</strong>
+                </div>
+                <div class="health-item">
+                    <span>User:</span>
+                    <span id="header-user-name" style="font-weight: 600;">Demo Visitor</span>
+                </div>
+                <div class="health-item">
                     <span class="status-dot green" id="dot-backend"></span>
                     <span id="text-backend">Online</span>
                 </div>
-                <div class="health-item">
-                    <span>Database</span>
-                    <span class="status-dot green" id="dot-db"></span>
-                    <span id="text-db">Connected</span>
-                </div>
-                <button class="btn btn-secondary text-sm" id="btn-refresh">Refresh Data</button>
+                <button class="btn btn-secondary text-sm" id="btn-refresh">Refresh</button>
+                <button class="btn btn-primary text-sm" id="btn-show-login">Login</button>
+                <button class="btn btn-secondary text-sm" id="btn-show-signup">Signup</button>
+                <button class="btn btn-secondary text-sm" id="btn-logout" style="display: none;">Logout</button>
                 <button class="btn btn-accent text-sm" id="btn-open-sim">Gateway Simulator</button>
             </div>
         </div>
@@ -369,6 +376,58 @@ Call Provider API (OpenAI / Claude / Gemini)</div>
         </section>
     </div>
 
+    <!-- LOGIN MODAL -->
+    <div class="modal-backdrop" id="login-modal">
+        <div class="modal-card" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3>Login to SaaS Workspace</h3>
+                <button class="modal-close" id="login-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="login-form">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">Email Address</label>
+                        <input type="email" id="login-email" class="input-text" style="width: 100%;" placeholder="admin@enterprise.com" required>
+                    </div>
+                    <div style="margin-bottom: 1.25rem;">
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">Password</label>
+                        <input type="password" id="login-password" class="input-text" style="width: 100%;" placeholder="••••••••" required>
+                    </div>
+                    <div id="login-error" class="text-danger text-sm" style="margin-bottom: 1rem; display: none;"></div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Sign In</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- SIGNUP MODAL -->
+    <div class="modal-backdrop" id="signup-modal">
+        <div class="modal-card" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3>Create Enterprise Account</h3>
+                <button class="modal-close" id="signup-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="signup-form">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">Full Name</label>
+                        <input type="text" id="signup-name" class="input-text" style="width: 100%;" placeholder="Jane Doe" required>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">Work Email</label>
+                        <input type="email" id="signup-email" class="input-text" style="width: 100%;" placeholder="jane@company.com" required>
+                    </div>
+                    <div style="margin-bottom: 1.25rem;">
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">Password</label>
+                        <input type="password" id="signup-password" class="input-text" style="width: 100%;" placeholder="••••••••" required minlength="6">
+                    </div>
+                    <div id="signup-error" class="text-danger text-sm" style="margin-bottom: 1rem; display: none;"></div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Create Multi-Tenant Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- EVENT DETAIL INSPECTION MODAL -->
     <div class="modal-backdrop" id="event-modal">
         <div class="modal-card">
@@ -404,40 +463,28 @@ Call Provider API (OpenAI / Claude / Gemini)</div>
             </div>
             <div class="modal-body">
                 <div class="arch-flow-box">
-Developer
+User Signup / Login (Supabase Auth)
+       │
+       ├── JWT Session Token issued
        │
        ▼
-GitHub Releases (Global CDN)
+Enterprise Governance Dashboard (Vercel)
        │
-       ├── Download Governance Interceptor SDK (v1.0.0)
-       ├── Download Sample Gateway (v1.0.0)
-       │
-       ▼
-Install into Enterprise LLM Gateway
-       │
-       ├── Routing Decision Made (Requested != Actual)
-       ├── POST /api/v1/events (Async / Non-blocking)
+       ├── Authorization: Bearer <Supabase JWT>
        │
        ▼
-Governance Tracker Cloud APIs (Hosted on Render)
-       ├── Ingestion & Validation Router
-       ├── Risk Assessor Engine (Context Window Drop Analysis)
-       ├── Compliance Flag Engine (Agent Whitelist Policy Match)
+Governance Tracker Cloud APIs (FastAPI on Render)
+       ├── Supabase JWT Validator
+       ├── User Profile -> Organization ID Resolver
+       ├── Organization Data Isolation Engine
        │
        ▼
-PostgreSQL Relational Storage (Hosted on Supabase)
-       │
-       ▼
-Enterprise Governance Dashboard (Hosted on Vercel)
-                </div>
-                <div class="margin-top">
-                    <h4>Enterprise Architecture Overview</h4>
-                    <p class="text-sm color-muted margin-top">
-                        • <strong>SDK Distribution</strong>: Distributed via GitHub Releases for instant CDN downloads, versioning, and zero backend cold-start latency.<br>
-                        • <strong>Governance Tracker APIs</strong>: High-throughput FastAPI cloud backend on Render reserved exclusively for governance event ingestion and compliance audits.<br>
-                        • <strong>Database (Supabase PostgreSQL)</strong>: Enterprise relational database storing model specs, agent policies, and immutable substitution logs.<br>
-                        • <strong>Web Dashboard (Vercel)</strong>: Real-time monitoring UI displaying live event streams, capability risk alerts, compliance flags, and retroactive audit reports.
-                    </p>
+Supabase PostgreSQL Storage
+       ├── auth.users (Managed by Supabase Auth)
+       ├── user_profiles (auth_user_id -> organization_id)
+       ├── organizations (Multi-tenant org boundaries)
+       ├── agents & events (Scoped by organization_id)
+       └── model_profiles (GLOBAL - Reference directory)
                 </div>
             </div>
         </div>

@@ -4,8 +4,10 @@ from backend.app.main import app
 from backend.app.database import engine, Base, SessionLocal
 from backend.app.seed_data import seed_database
 
-# Ensure database tables and seed data exist for pytest
+# Ensure clean database tables for pytest
+Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
+
 db = SessionLocal()
 try:
     seed_database(db)

@@ -1,63 +1,78 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Optional, Tuple
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from backend.app.database import get_db
-from backend.app.schemas.schemas import ModelProfileResponse, AgentResponse, AgentCreate
+from backend.app.auth import get_current_user_and_org
+from backend.app.models.models import UserProfile, Organization
+from backend.app.schemas.schemas import ModelProfileResponse, AgentResponse, UserProfileResponse
 from backend.app.repositories.model_repository import ModelRepository
 from backend.app.repositories.agent_repository import AgentRepository
 
-router = APIRouter(tags=["Model Profiles & Agent Policies"])
+router = APIRouter(tags=["Models & Agents & Auth Profile"])
 
 @router.get("/models", response_model=List[ModelProfileResponse])
 def list_model_profiles(db: Session = Depends(get_db)):
     """
-    List all supported model capability profiles and context windows.
+    GLOBAL reference directory: Returns all model capability profiles.
+    Shared across all tenant organizations.
     """
     model_repo = ModelRepository(db)
     return model_repo.list_all()
 
 @router.get("/agents", response_model=List[AgentResponse])
-def list_agents(db: Session = Depends(get_db)):
+def list_agents(
+    auth_data: Tuple[Optional[UserProfile], str] = Depends(get_current_user_and_org),
+    db: Session = Depends(get_db)
+):
     """
-    List all registered agent compliance policies and approved model whitelists.
+    Returns registered agents and approved whitelists scoped to tenant organization.
     """
+    _, org_id = auth_data
     agent_repo = AgentRepository(db)
-    agents = agent_repo.list_all()
-    results = []
+    agents = agent_repo.get_all(organization_id=org_id)
+
+    response = []
     for a in agents:
-        approved = [am.model_name for am in a.approved_models]
-        results.append(AgentResponse(
-            id=a.id,
-            agent_id=a.agent_id,
-            agent_name=a.agent_name,
-            description=a.description,
-            approved_models=approved,
-            created_at=a.created_at
-        ))
-    return results
+        response.append({
+            "id": a.id,
+            "agent_id": a.agent_id,
+            "agent_name": a.agent_name,
+            "description": a.description,
+            "organization_id": a.organization_id,
+            "approved_models": [m.model_name for m in a.approved_models]
+        })
+    return response
 
-@router.post("/agents", response_model=AgentResponse, status_code=status.HTTP_201_CREATED)
-def create_or_update_agent_policy(payload: AgentCreate, db: Session = Depends(get_db)):
+@router.get("/auth/me", response_model=UserProfileResponse)
+def get_current_user_profile(
+    auth_data: Tuple[Optional[UserProfile], str] = Depends(get_current_user_and_org),
+    db: Session = Depends(get_db)
+):
     """
-    Create a new agent governance policy or update approved model whitelist.
+    Returns authenticated user profile and organization details.
     """
-    agent_repo = AgentRepository(db)
-    existing = agent_repo.get_by_agent_id(payload.agent_id)
-    if existing:
-        raise HTTPException(status_code=400, detail=f"Agent '{payload.agent_id}' already exists.")
+    user_profile, org_id = auth_data
+    org = db.query(Organization).filter(Organization.id == org_id).first()
+    org_name = org.organization_name if org else "Hackathon Demo Org"
 
-    agent = agent_repo.create(
-        agent_id=payload.agent_id,
-        agent_name=payload.agent_name,
-        description=payload.description,
-        approved_models=payload.approved_models
-    )
-    approved = [am.model_name for am in agent.approved_models]
-    return AgentResponse(
-        id=agent.id,
-        agent_id=agent.agent_id,
-        agent_name=agent.agent_name,
-        description=agent.description,
-        approved_models=approved,
-        created_at=agent.created_at
-    )
+    if user_profile:
+        return {
+            "id": user_profile.id,
+            "auth_user_id": user_profile.auth_user_id,
+            "organization_id": user_profile.organization_id,
+            "full_name": user_profile.full_name,
+            "role": user_profile.role,
+            "organization_name": org_name,
+            "created_at": user_profile.created_at
+        }
+    else:
+        # Default unauthenticated public demo profile
+        return {
+            "id": "demo-profile-1",
+            "auth_user_id": "demo-auth-id",
+            "organization_id": org_id,
+            "full_name": "Demo Visitor",
+            "role": "Auditor",
+            "organization_name": org_name,
+            "created_at": "2026-07-30T00:00:00Z"
+        }
