@@ -1,18 +1,10 @@
 {
   "version": 2,
-  "cleanUrls": true,
-  "routes": [
+  "outputDirectory": "frontend",
+  "rewrites": [
     {
-      "src": "/static/(.*)",
-      "dest": "/frontend/$1"
-    },
-    {
-      "src": "/",
-      "dest": "/frontend/index.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/frontend/$1"
+      "source": "/(.*)",
+      "destination": "/$1"
     }
   ]
 }
