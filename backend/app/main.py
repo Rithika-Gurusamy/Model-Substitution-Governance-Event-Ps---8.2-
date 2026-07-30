@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 
 from backend.app.database import engine, Base, get_db
 from backend.app.seed_data import seed_database
@@ -10,10 +11,20 @@ from backend.app.routers import health, events, compliance, models_and_agents, a
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create DB tables
+    # 1. Create DB tables
     Base.metadata.create_all(bind=engine)
 
-    # Seed Database with models, agents, policies, and initial demo events
+    # 2. Additive Schema Migration: Ensure organization_id columns exist on agents & governance_events tables
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE agents ADD COLUMN IF NOT EXISTS organization_id VARCHAR;"))
+            conn.execute(text("ALTER TABLE governance_events ADD COLUMN IF NOT EXISTS organization_id VARCHAR;"))
+            conn.commit()
+            print("Database schema migration: organization_id columns verified.")
+    except Exception as e:
+        print(f"Notice: Schema migration check: {e}")
+
+    # 3. Seed Database with models, agents, policies, and initial demo events
     try:
         db = next(get_db())
         seed_database(db)
