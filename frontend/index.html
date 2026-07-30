@@ -13,18 +13,18 @@
     <!-- Top Navigation Bar -->
     <header class="navbar">
         <div class="logo-area">
-            <div class="shield-icon">🛡️</div>
+            <div class="logo-icon">MSG</div>
             <div>
                 <h1>Model Substitution Governance Tracker</h1>
-                <p class="subtitle">LLM Gateway Compliance & Capability Risk Audit Platform (v1.0 Production API)</p>
+                <p class="subtitle">LLM Gateway Compliance & Capability Risk Audit Platform</p>
             </div>
         </div>
         <div class="nav-right">
             <div class="status-indicator" id="api-status">
                 <span class="status-dot green"></span> Live API Connected
             </div>
-            <button class="btn btn-secondary" id="btn-refresh">🔄 Refresh Data</button>
-            <button class="btn btn-primary" id="btn-open-sim">⚡ Gateway Simulator</button>
+            <button class="btn btn-secondary" id="btn-refresh">Refresh Data</button>
+            <button class="btn btn-primary" id="btn-open-sim">Gateway Simulator</button>
         </div>
     </header>
 
@@ -32,11 +32,11 @@
     <div class="app-container">
         <!-- Navigation Tabs mapped directly to Problem Statement Deliverables -->
         <nav class="tabs-nav">
-            <button class="tab-btn active" data-tab="tab-recorder">📝 Governance Event Recorder</button>
-            <button class="tab-btn" data-tab="tab-risk">⚠️ Substitution Risk Assessor</button>
-            <button class="tab-btn" data-tab="tab-compliance">🚨 Compliance Flag Engine</button>
-            <button class="tab-btn" data-tab="tab-audit">⚖️ Retroactive Compliance Audit</button>
-            <button class="tab-btn" data-tab="tab-models">🧠 Model Capability Profiles</button>
+            <button class="tab-btn active" data-tab="tab-recorder">Governance Event Recorder</button>
+            <button class="tab-btn" data-tab="tab-risk">Substitution Risk Assessor</button>
+            <button class="tab-btn" data-tab="tab-compliance">Compliance Flag Engine</button>
+            <button class="tab-btn" data-tab="tab-audit">Retroactive Compliance Audit</button>
+            <button class="tab-btn" data-tab="tab-models">Model Capability Profiles</button>
         </nav>
 
         <!-- KPI Executive Summary Cards -->
@@ -46,17 +46,17 @@
                 <div class="kpi-value" id="kpi-total">0</div>
                 <div class="kpi-sub">Gateway routing events</div>
             </div>
-            <div class="kpi-card warning">
+            <div class="kpi-card">
                 <div class="kpi-title">HIGH / CRITICAL RISK</div>
                 <div class="kpi-value" id="kpi-high-risk">0</div>
                 <div class="kpi-sub">Material capability downgrades</div>
             </div>
-            <div class="kpi-card danger">
+            <div class="kpi-card">
                 <div class="kpi-title">COMPLIANCE VIOLATIONS</div>
                 <div class="kpi-value" id="kpi-violations">0</div>
                 <div class="kpi-sub">Unapproved model routing</div>
             </div>
-            <div class="kpi-card info">
+            <div class="kpi-card">
                 <div class="kpi-title">SUPPORTED MODELS</div>
                 <div class="kpi-value" id="kpi-models-count">50+</div>
                 <div class="kpi-sub">Context window profiles</div>
@@ -92,6 +92,7 @@
                         </select>
                     </div>
                 </div>
+                <p class="tab-description">Captures every model substitution as an official governance event, recording the requested model, actual model used, substitution reason (cost, availability, or policy), timestamp, agent ID, and session ID.</p>
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
@@ -118,9 +119,9 @@
         <section id="tab-risk" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2>Substitution Risk Assessor (Capability Downgrade Analysis)</h2>
+                    <h2>Substitution Risk Assessor</h2>
                 </div>
-                <p class="subtitle margin-bottom">Evaluates context window capacity drops between requested vs actual model. Flags material downgrades (&gt;50% context reduction) as High/Critical risk.</p>
+                <p class="tab-description">Compares the context window capability profile of requested versus actual models and flags material capability downgrades (&gt;50% context reduction) as High or Critical risk.</p>
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
@@ -145,9 +146,9 @@
         <section id="tab-compliance" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2>Compliance Flag Engine & Agent Approved Whitelists</h2>
+                    <h2>Compliance Flag Engine</h2>
                 </div>
-                <p class="subtitle margin-bottom">Enforces agent compliance policies. Flags substitutions to unapproved models for manual compliance review.</p>
+                <p class="tab-description">Evaluates agent compliance policies against approved model whitelists. Substitutions landing outside approved bounds automatically trigger a compliance flag requiring review.</p>
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
@@ -170,9 +171,10 @@
         <section id="tab-audit" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2>Retroactive Compliance & Risk Exposure Audit (Bonus Feature)</h2>
-                    <button class="btn btn-primary" id="btn-run-audit">⚡ Run Retroactive Audit</button>
+                    <h2>Retroactive Compliance & Risk Exposure Audit</h2>
+                    <button class="btn btn-primary" id="btn-run-audit">Run Retroactive Audit</button>
                 </div>
+                <p class="tab-description">Computes historical compliance exposure across past substitution logs, auditing total requests served by unapproved models and high-risk exposure ratios.</p>
                 <div id="audit-results-container">
                     <p class="subtitle">Click "Run Retroactive Audit" to compute compliance exposure across historical substitution logs.</p>
                 </div>
@@ -183,9 +185,10 @@
         <section id="tab-models" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2>Supported Model Capability Profiles & Context Windows</h2>
-                    <input type="text" id="search-models" class="input-text" placeholder="🔍 Search models (e.g. GPT-5, Claude, Gemini, Llama)...">
+                    <h2>Model Capability Profiles</h2>
+                    <input type="text" id="search-models" class="input-text" placeholder="Search models (e.g. GPT-5, Claude, Gemini, Llama)...">
                 </div>
+                <p class="tab-description">Repository of model capability specifications sourced directly from official model provider documentation (OpenAI, Anthropic, Google, Meta, DeepSeek, Mistral, Cohere, xAI, Microsoft).</p>
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
@@ -208,7 +211,7 @@
     <div class="modal-backdrop" id="event-modal">
         <div class="modal-card">
             <div class="modal-header">
-                <h3>🛡️ Governance Event Detail Inspection</h3>
+                <h3>Governance Event Detail Inspection</h3>
                 <button class="modal-close" id="modal-close-btn">&times;</button>
             </div>
             <div class="modal-body" id="modal-content">

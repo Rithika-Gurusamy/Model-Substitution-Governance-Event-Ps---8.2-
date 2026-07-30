@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Refresh Data
     btnRefresh.addEventListener('click', loadAllData);
     btnOpenSim.addEventListener('click', async () => {
-        btnOpenSim.innerText = '⚡ Simulating...';
+        btnOpenSim.innerText = 'Simulating...';
         try {
             // Trigger sample substitutions via API calls
             const testPayloads = [
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             console.error('Simulator error:', e);
         } finally {
-            btnOpenSim.innerText = '⚡ Gateway Simulator';
+            btnOpenSim.innerText = 'Gateway Simulator';
         }
     });
 
@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (filtered.length === 0) {
-            eventsTbody.innerHTML = `<tr><td colspan="8" class="text-center">No governance events recorded yet. Click "⚡ Gateway Simulator" to generate live events.</td></tr>`;
+            eventsTbody.innerHTML = `<tr><td colspan="8" class="text-center">No governance events recorded yet. Click "Gateway Simulator" to generate live events.</td></tr>`;
             return;
         }
 
@@ -193,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const dateStr = new Date(e.timestamp).toLocaleString();
             const riskBadgeClass = `badge risk-${e.risk_level.toLowerCase()}`;
             const compBadgeClass = e.compliance_flagged ? 'badge status-flagged' : 'badge status-approved';
-            const compText = e.compliance_flagged ? '⛔ Violation Flagged' : '✅ Compliant';
+            const compText = e.compliance_flagged ? 'Violation Flagged' : 'Compliant';
 
             return `
                 <tr>
@@ -346,7 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="detail-row"><strong>Context Capacity Downgrade:</strong> ${ev.context_downgrade_pct}% reduction</div>
             <div class="detail-row"><strong>Risk Analysis Details:</strong> ${escapeHtml(ev.risk_reason)}</div>
             <hr class="divider"/>
-            <div class="detail-row"><strong>Compliance Status:</strong> ${ev.compliance_flagged ? '<span class="badge status-flagged">⛔ VIOLATION FLAGGED</span>' : '<span class="badge status-approved">✅ COMPLIANT</span>'}</div>
+            <div class="detail-row"><strong>Compliance Status:</strong> ${ev.compliance_flagged ? '<span class="badge status-flagged">VIOLATION FLAGGED</span>' : '<span class="badge status-approved">COMPLIANT</span>'}</div>
             ${ev.compliance_reason ? `<div class="detail-row text-danger"><strong>Violation Reason:</strong> ${escapeHtml(ev.compliance_reason)}</div>` : ''}
         `;
         eventModal.classList.add('active');
