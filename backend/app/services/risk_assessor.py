@@ -8,7 +8,7 @@ class RiskAssessor:
 
     def evaluate_substitution_risk(self, requested_model: str, actual_model: str) -> Tuple[str, str, float]:
         """
-        Evaluates material capability downgrade between requested and actual models.
+        Evaluates capability risk exclusively based on Context Window Capacity downgrade.
         Returns: (risk_level, risk_reason, context_downgrade_pct)
         """
         req_profile = self.model_repo.get_by_name(requested_model)
@@ -23,27 +23,23 @@ class RiskAssessor:
         else:
             downgrade_pct = 0.0
 
-        reasons = []
-        risk_level = "Low"
+        downgrade_pct_rounded = round(downgrade_pct, 1)
 
-        if downgrade_pct > 0:
-            reasons.append(f"Context window capacity reduced by {downgrade_pct:.1f}% ({req_cw:,} → {act_cw:,} tokens).")
-        else:
-            reasons.append(f"Context window capacity maintained or increased ({req_cw:,} → {act_cw:,} tokens).")
-
-        # Risk Classification Rules based on context window drop
-        if downgrade_pct >= 75.0:
-            risk_level = "Critical"
-            reasons.append("CRITICAL: Severe capability downgrade (>75% drop in context window capacity). Risk of prompt truncation or data loss.")
-        elif downgrade_pct >= 50.0:
-            risk_level = "High"
-            reasons.append("HIGH RISK: Material capability downgrade (>50% drop in context window capacity).")
-        elif downgrade_pct >= 25.0:
-            risk_level = "Medium"
-            reasons.append("MEDIUM RISK: Moderate context window reduction.")
-        else:
+        # Risk Classification Logic strictly based on Context Window Capacity Drop
+        if downgrade_pct == 0.0:
             risk_level = "Low"
-            reasons.append("LOW RISK: Substitution within acceptable capability bounds.")
+            risk_reason = f"LOW RISK: Context window capacity maintained or increased ({req_cw:,} → {act_cw:,} tokens)."
+        elif downgrade_pct < 25.0:
+            risk_level = "Low"
+            risk_reason = f"LOW RISK: Minor context window reduction of {downgrade_pct_rounded}% ({req_cw:,} → {act_cw:,} tokens)."
+        elif downgrade_pct < 50.0:
+            risk_level = "Medium"
+            risk_reason = f"MEDIUM RISK: Moderate context window reduction of {downgrade_pct_rounded}% ({req_cw:,} → {act_cw:,} tokens)."
+        elif downgrade_pct < 75.0:
+            risk_level = "High"
+            risk_reason = f"HIGH RISK: Material context window reduction of {downgrade_pct_rounded}% ({req_cw:,} → {act_cw:,} tokens)."
+        else:
+            risk_level = "Critical"
+            risk_reason = f"CRITICAL RISK: Severe material capability downgrade ({downgrade_pct_rounded}% drop in context capacity: {req_cw:,} → {act_cw:,} tokens). Risk of prompt truncation or severe context loss."
 
-        full_reason = " ".join(reasons)
-        return risk_level, full_reason, round(downgrade_pct, 2)
+        return risk_level, risk_reason, round(downgrade_pct, 2)

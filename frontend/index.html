@@ -21,7 +21,7 @@
         </div>
         <div class="nav-right">
             <div class="status-indicator" id="api-status">
-                <span class="status-dot green"></span> API Connected
+                <span class="status-dot green"></span> Live API Connected
             </div>
             <button class="btn btn-secondary" id="btn-refresh">🔄 Refresh Data</button>
             <button class="btn btn-primary" id="btn-open-sim">⚡ Gateway Simulator</button>
@@ -130,7 +130,7 @@
         <section id="tab-models" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2>Supported Model Capability Profiles & Context Windows</h2>
+                    <h2>Supported Model Profiles & Context Windows</h2>
                     <input type="text" id="search-models" class="input-text" placeholder="🔍 Search models (e.g. GPT-5, Claude, Gemini, Llama)...">
                 </div>
                 <div class="table-container">
@@ -139,12 +139,11 @@
                             <tr>
                                 <th>Model Name</th>
                                 <th>Context Window Capacity</th>
-                                <th>Guardrail Baseline</th>
-                                <th>Bias Benchmark Score</th>
+                                <th>Capability Status</th>
                             </tr>
                         </thead>
                         <tbody id="models-tbody">
-                            <tr><td colspan="4" class="text-center">Loading model profiles...</td></tr>
+                            <tr><td colspan="3" class="text-center">Loading model profiles...</td></tr>
                         </tbody>
                     </table>
                 </div>

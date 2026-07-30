@@ -155,12 +155,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function populateAgentFilter() {
+        const currentSelected = filterAgent.value;
         filterAgent.innerHTML = '<option value="">All Agents</option>';
         const agentIds = [...new Set(eventsData.map(e => e.agent_id))];
         agentIds.forEach(id => {
             const opt = document.createElement('option');
             opt.value = id;
             opt.innerText = id;
+            if (id === currentSelected) opt.selected = true;
             filterAgent.appendChild(opt);
         });
     }
@@ -213,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const filtered = modelsData.filter(m => m.model_name.toLowerCase().includes(query));
 
         if (filtered.length === 0) {
-            modelsTbody.innerHTML = `<tr><td colspan="4" class="text-center">No model profiles found.</td></tr>`;
+            modelsTbody.innerHTML = `<tr><td colspan="3" class="text-center">No model profiles found.</td></tr>`;
             return;
         }
 
@@ -221,8 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <tr>
                 <td><strong>${escapeHtml(m.model_name)}</strong></td>
                 <td><span class="font-mono">${m.context_window.toLocaleString()} tokens</span></td>
-                <td><span class="badge status-approved">${escapeHtml(m.guardrail_level || 'Medium')}</span></td>
-                <td><span class="font-mono">${m.bias_score || 5.0}</span></td>
+                <td><span class="badge status-approved">Context Profile Verified</span></td>
             </tr>
         `).join('');
     }
@@ -317,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="detail-row"><strong>Substitution Reason:</strong> <span class="badge reason-${ev.reason.toLowerCase()}">${escapeHtml(ev.reason.toUpperCase())}</span></div>
             <hr class="divider"/>
             <div class="detail-row"><strong>Risk Assessment Level:</strong> <span class="badge risk-${ev.risk_level.toLowerCase()}">${escapeHtml(ev.risk_level)}</span></div>
-            <div class="detail-row"><strong>Context Downgrade:</strong> ${ev.context_downgrade_pct}% reduction</div>
+            <div class="detail-row"><strong>Context Capacity Downgrade:</strong> ${ev.context_downgrade_pct}% reduction</div>
             <div class="detail-row"><strong>Risk Analysis Details:</strong> ${escapeHtml(ev.risk_reason)}</div>
             <hr class="divider"/>
             <div class="detail-row"><strong>Compliance Status:</strong> ${ev.compliance_flagged ? '<span class="badge status-flagged">⛔ VIOLATION FLAGGED</span>' : '<span class="badge status-approved">✅ COMPLIANT</span>'}</div>
