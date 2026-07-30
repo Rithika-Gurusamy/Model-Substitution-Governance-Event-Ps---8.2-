@@ -172,7 +172,7 @@ function initAuthLanding() {
     // Sign In Submit
     loginForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = document.getElementById('auth-login-email').value;
+        const email = document.getElementById('auth-login-email').value.trim();
         const password = document.getElementById('auth-login-password').value;
         const errDiv = document.getElementById('auth-login-error');
 
@@ -186,7 +186,9 @@ function initAuthLanding() {
 
         const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (error) {
-            errDiv.innerText = error.message;
+            errDiv.innerText = error.message.includes("Confirm Email") 
+                ? "Please disable 'Confirm Email' in Supabase Auth settings to log in immediately."
+                : error.message;
             errDiv.style.display = 'block';
         } else {
             showDashboardView(data.session);
@@ -196,8 +198,8 @@ function initAuthLanding() {
     // Create Account Submit
     signupForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const fullName = document.getElementById('auth-signup-name').value;
-        const email = document.getElementById('auth-signup-email').value;
+        const fullName = document.getElementById('auth-signup-name').value.trim();
+        const email = document.getElementById('auth-signup-email').value.trim();
         const password = document.getElementById('auth-signup-password').value;
         const errDiv = document.getElementById('auth-signup-error');
 
@@ -218,9 +220,18 @@ function initAuthLanding() {
         if (error) {
             errDiv.innerText = error.message;
             errDiv.style.display = 'block';
-        } else {
-            alert("Account created successfully! Logging you in...");
+        } else if (data.session) {
+            // Instant session created
             showDashboardView(data.session);
+        } else {
+            // Email confirmation required in Supabase settings
+            const { data: loginData, error: loginErr } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (loginData && loginData.session) {
+                showDashboardView(loginData.session);
+            } else {
+                errDiv.innerText = "Account created! If login fails, please disable 'Confirm Email' in Supabase Auth settings.";
+                errDiv.style.display = 'block';
+            }
         }
     });
 
