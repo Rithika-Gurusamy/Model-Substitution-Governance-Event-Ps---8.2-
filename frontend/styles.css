@@ -37,7 +37,93 @@ body {
     line-height: 1.5;
 }
 
-/* Header Navbar - Fully Responsive & Balanced Layout */
+/* Auth Full Page View */
+.auth-landing-wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 1rem;
+    background: #ffffff;
+}
+
+.auth-card-container {
+    width: 100%;
+    max-width: 460px;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 2.25rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 1.75rem;
+}
+
+.auth-brand-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.auth-header h1 {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+}
+
+.auth-header p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 0.35rem;
+    line-height: 1.45;
+}
+
+.auth-toggle-btns {
+    display: flex;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 1.5rem;
+}
+
+.auth-toggle-btn {
+    flex: 1;
+    padding: 0.55rem;
+    background: transparent;
+    border: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: all 0.15s ease;
+}
+
+.auth-toggle-btn.active {
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: var(--shadow-sm);
+}
+
+.auth-form-group {
+    margin-bottom: 1.15rem;
+}
+
+.auth-form-group label {
+    display: block;
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.35rem;
+}
+
+/* Header Navbar - Dashboard */
 .product-header {
     background: #ffffff;
     border-bottom: 1px solid var(--border-color);
@@ -104,7 +190,7 @@ body {
     margin-top: 1.1rem;
 }
 
-/* System Health Status Bar - Clean Right Alignment */
+/* System Health Status Bar */
 .system-health-bar {
     display: flex;
     align-items: center;
@@ -301,7 +387,7 @@ body {
     color: #0f172a;
 }
 
-/* Prominent Enterprise "What is this?" Button */
+/* Enterprise Help Button */
 .help-btn {
     background: #ffffff;
     color: #334155;

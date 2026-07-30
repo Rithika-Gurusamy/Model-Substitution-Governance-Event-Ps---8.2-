@@ -94,79 +94,92 @@ const helpTexts = {
 
 // DOM Initialization
 document.addEventListener('DOMContentLoaded', () => {
-    initAuthListeners();
+    initAuthLanding();
     initTabNavigation();
     initFilterListeners();
     initModalListeners();
     initSimulator();
     initAuditButton();
     
-    // Initial Auth & Data Load
+    // Initial Auth Session Check
     checkAuthSession();
-    loadAllData();
 });
 
-// Supabase Auth Handlers
+// Supabase Auth & Page View Switching
 async function checkAuthSession() {
-    if (!supabaseClient) return;
+    if (!supabaseClient) {
+        showDashboardView();
+        return;
+    }
 
     const { data: { session } } = await supabaseClient.auth.getSession();
-    updateAuthUI(session);
+    if (session && session.user) {
+        showDashboardView(session);
+    } else {
+        showAuthLandingView();
+    }
 
     supabaseClient.auth.onAuthStateChange((event, session) => {
-        updateAuthUI(session);
-        loadAllData();
+        if (session && session.user) {
+            showDashboardView(session);
+        } else {
+            showAuthLandingView();
+        }
     });
 }
 
-function updateAuthUI(session) {
-    const btnLogin = document.getElementById('btn-show-login');
-    const btnSignup = document.getElementById('btn-show-signup');
-    const btnLogout = document.getElementById('btn-logout');
+function showAuthLandingView() {
+    document.getElementById('auth-view').style.display = 'flex';
+    document.getElementById('dashboard-view').style.display = 'none';
+}
+
+function showDashboardView(session = null) {
+    document.getElementById('auth-view').style.display = 'none';
+    document.getElementById('dashboard-view').style.display = 'block';
 
     if (session && session.user) {
-        if (btnLogin) btnLogin.style.display = 'none';
-        if (btnSignup) btnSignup.style.display = 'none';
-        if (btnLogout) btnLogout.style.display = 'inline-flex';
-        
         currentUserName = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
         document.getElementById('header-user-name').innerText = currentUserName;
     } else {
-        if (btnLogin) btnLogin.style.display = 'inline-flex';
-        if (btnSignup) btnSignup.style.display = 'inline-flex';
-        if (btnLogout) btnLogout.style.display = 'none';
-        
         document.getElementById('header-user-name').innerText = "Demo Visitor";
         document.getElementById('header-org-name').innerText = "Hackathon Demo Org";
     }
+
+    loadAllData();
 }
 
-function initAuthListeners() {
-    // Open Modals
-    document.getElementById('btn-show-login')?.addEventListener('click', () => {
-        document.getElementById('login-modal').classList.add('active');
-    });
-    document.getElementById('btn-show-signup')?.addEventListener('click', () => {
-        document.getElementById('signup-modal').classList.add('active');
-    });
-    document.getElementById('login-close-btn')?.addEventListener('click', () => {
-        document.getElementById('login-modal').classList.remove('active');
-    });
-    document.getElementById('signup-close-btn')?.addEventListener('click', () => {
-        document.getElementById('signup-modal').classList.remove('active');
+function initAuthLanding() {
+    const toggleLogin = document.getElementById('toggle-login-mode');
+    const toggleSignup = document.getElementById('toggle-signup-mode');
+    const loginForm = document.getElementById('auth-login-form');
+    const signupForm = document.getElementById('auth-signup-form');
+
+    // Switch between Sign In and Create Account
+    toggleLogin?.addEventListener('click', () => {
+        toggleLogin.classList.add('active');
+        toggleSignup.classList.remove('active');
+        loginForm.style.display = 'block';
+        signupForm.style.display = 'none';
     });
 
-    // Login Form Submit
-    document.getElementById('login-form')?.addEventListener('submit', async (e) => {
+    toggleSignup?.addEventListener('click', () => {
+        toggleSignup.classList.add('active');
+        toggleLogin.classList.remove('active');
+        signupForm.style.display = 'block';
+        loginForm.style.display = 'none';
+    });
+
+    // Sign In Submit
+    loginForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = document.getElementById('login-email').value;
-        const password = document.getElementById('login-password').value;
-        const errDiv = document.getElementById('login-error');
+        const email = document.getElementById('auth-login-email').value;
+        const password = document.getElementById('auth-login-password').value;
+        const errDiv = document.getElementById('auth-login-error');
 
         errDiv.style.display = 'none';
 
         if (!supabaseClient) {
-            errDiv.innerText = "Supabase client not initialized.";
+            errDiv.innerText = "Supabase Auth client not initialized.";
             errDiv.style.display = 'block';
             return;
         }
@@ -176,23 +189,22 @@ function initAuthListeners() {
             errDiv.innerText = error.message;
             errDiv.style.display = 'block';
         } else {
-            document.getElementById('login-modal').classList.remove('active');
-            loadAllData();
+            showDashboardView(data.session);
         }
     });
 
-    // Signup Form Submit
-    document.getElementById('signup-form')?.addEventListener('submit', async (e) => {
+    // Create Account Submit
+    signupForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const fullName = document.getElementById('signup-name').value;
-        const email = document.getElementById('signup-email').value;
-        const password = document.getElementById('signup-password').value;
-        const errDiv = document.getElementById('signup-error');
+        const fullName = document.getElementById('auth-signup-name').value;
+        const email = document.getElementById('auth-signup-email').value;
+        const password = document.getElementById('auth-signup-password').value;
+        const errDiv = document.getElementById('auth-signup-error');
 
         errDiv.style.display = 'none';
 
         if (!supabaseClient) {
-            errDiv.innerText = "Supabase client not initialized.";
+            errDiv.innerText = "Supabase Auth client not initialized.";
             errDiv.style.display = 'block';
             return;
         }
@@ -207,18 +219,22 @@ function initAuthListeners() {
             errDiv.innerText = error.message;
             errDiv.style.display = 'block';
         } else {
-            document.getElementById('signup-modal').classList.remove('active');
             alert("Account created successfully! Logging you in...");
-            loadAllData();
+            showDashboardView(data.session);
         }
+    });
+
+    // Public Guest Demo Mode
+    document.getElementById('btn-guest-demo')?.addEventListener('click', () => {
+        showDashboardView();
     });
 
     // Logout
     document.getElementById('btn-logout')?.addEventListener('click', async () => {
         if (supabaseClient) {
             await supabaseClient.auth.signOut();
-            loadAllData();
         }
+        showAuthLandingView();
     });
 }
 
@@ -292,8 +308,6 @@ async function fetchAgents() {
 function updateHealthStatus(backendOk, dbOk) {
     const dotBackend = document.getElementById('dot-backend');
     const textBackend = document.getElementById('text-backend');
-    const dotDb = document.getElementById('dot-db');
-    const textDb = document.getElementById('text-db');
 
     if (backendOk) {
         dotBackend.className = 'status-dot green';
@@ -301,14 +315,6 @@ function updateHealthStatus(backendOk, dbOk) {
     } else {
         dotBackend.className = 'status-dot red';
         textBackend.innerText = 'Offline';
-    }
-
-    if (dbOk) {
-        dotDb.className = 'status-dot green';
-        textDb.innerText = 'Connected';
-    } else {
-        dotDb.className = 'status-dot red';
-        textDb.innerText = 'Disconnected';
     }
 }
 
