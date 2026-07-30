@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 from backend.app.database import engine, Base, get_db
 from backend.app.seed_data import seed_database
-from backend.app.routers import health, events, compliance, models_and_agents
+from backend.app.routers import health, events, compliance, models_and_agents, auth_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -44,6 +44,7 @@ app.add_middleware(
 # Include API Routers with /api/v1 prefix
 API_PREFIX = "/api/v1"
 app.include_router(health.router, prefix=API_PREFIX)
+app.include_router(auth_router.router, prefix=API_PREFIX)
 app.include_router(events.router, prefix=API_PREFIX)
 app.include_router(compliance.router, prefix=API_PREFIX)
 app.include_router(models_and_agents.router, prefix=API_PREFIX)

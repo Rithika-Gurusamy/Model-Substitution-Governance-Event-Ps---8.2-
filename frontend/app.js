@@ -4,6 +4,7 @@ let modelsData = [];
 let agentsData = [];
 let currentOrgName = "Hackathon Demo Org";
 let currentUserName = "Demo Visitor";
+let currentUserSession = null;
 
 // Initialize Supabase Auth Client
 let supabaseClient = null;
@@ -15,8 +16,11 @@ if (typeof supabase !== 'undefined' && APP_CONFIG.SUPABASE_URL && APP_CONFIG.SUP
 async function fetchWithAuth(url, options = {}) {
     options.headers = options.headers || {};
     
-    // Attach Supabase JWT Session Token if logged in
-    if (supabaseClient) {
+    // Attach Session Token if available
+    const savedToken = localStorage.getItem('governance_auth_token');
+    if (savedToken) {
+        options.headers['Authorization'] = `Bearer ${savedToken}`;
+    } else if (supabaseClient) {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session && session.access_token) {
             options.headers['Authorization'] = `Bearer ${session.access_token}`;
@@ -105,27 +109,29 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuthSession();
 });
 
-// Supabase Auth & Page View Switching
+// Supabase & Backend Auth Session Check
 async function checkAuthSession() {
-    if (!supabaseClient) {
-        showDashboardView();
-        return;
+    const savedUser = localStorage.getItem('governance_user_profile');
+    if (savedUser) {
+        try {
+            const userObj = JSON.parse(savedUser);
+            showDashboardView(userObj);
+            return;
+        } catch(e) {}
     }
 
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session && session.user) {
-        showDashboardView(session);
-    } else {
-        showAuthLandingView();
-    }
-
-    supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (supabaseClient) {
+        const { data: { session } } = await supabaseClient.auth.getSession();
         if (session && session.user) {
-            showDashboardView(session);
-        } else {
-            showAuthLandingView();
+            showDashboardView({
+                full_name: session.user.user_metadata?.full_name || session.user.email.split('@')[0],
+                organization_name: `${session.user.user_metadata?.full_name || 'User'}'s Workspace`
+            });
+            return;
         }
-    });
+    }
+
+    showAuthLandingView();
 }
 
 function showAuthLandingView() {
@@ -133,13 +139,15 @@ function showAuthLandingView() {
     document.getElementById('dashboard-view').style.display = 'none';
 }
 
-function showDashboardView(session = null) {
+function showDashboardView(userObj = null) {
     document.getElementById('auth-view').style.display = 'none';
     document.getElementById('dashboard-view').style.display = 'block';
 
-    if (session && session.user) {
-        currentUserName = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
+    if (userObj) {
+        currentUserName = userObj.full_name || "Account User";
+        currentOrgName = userObj.organization_name || `${currentUserName}'s Workspace`;
         document.getElementById('header-user-name').innerText = currentUserName;
+        document.getElementById('header-org-name').innerText = currentOrgName;
     } else {
         document.getElementById('header-user-name').innerText = "Demo Visitor";
         document.getElementById('header-org-name').innerText = "Hackathon Demo Org";
@@ -172,76 +180,113 @@ function initAuthLanding() {
     // Sign In Submit
     loginForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = document.getElementById('auth-login-email').value.trim();
+        const email = document.getElementById('auth-login-email').value;
         const password = document.getElementById('auth-login-password').value;
         const errDiv = document.getElementById('auth-login-error');
 
         errDiv.style.display = 'none';
 
-        if (!supabaseClient) {
-            errDiv.innerText = "Supabase Auth client not initialized.";
-            errDiv.style.display = 'block';
-            return;
-        }
+        // 1. Try Direct Backend Auth
+        try {
+            const res = await fetch(`${APP_CONFIG.RENDER_API_BASE}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
 
-        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) {
-            errDiv.innerText = error.message.includes("Confirm Email") 
-                ? "Please disable 'Confirm Email' in Supabase Auth settings to log in immediately."
-                : error.message;
-            errDiv.style.display = 'block';
+            if (res.ok) {
+                const data = await res.json();
+                localStorage.setItem('governance_auth_token', data.access_token);
+                localStorage.setItem('governance_user_profile', JSON.stringify(data.user));
+                showDashboardView(data.user);
+                return;
+            }
+        } catch (e) {}
+
+        // 2. Try Supabase Auth
+        if (supabaseClient) {
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) {
+                errDiv.innerText = error.message;
+                errDiv.style.display = 'block';
+            } else {
+                const userObj = {
+                    full_name: data.session.user.user_metadata?.full_name || email.split('@')[0],
+                    organization_name: `${email.split('@')[0]}'s Workspace`
+                };
+                localStorage.setItem('governance_user_profile', JSON.stringify(userObj));
+                showDashboardView(userObj);
+            }
         } else {
-            showDashboardView(data.session);
+            errDiv.innerText = "Invalid credentials. Please check your email and password or create an account.";
+            errDiv.style.display = 'block';
         }
     });
 
     // Create Account Submit
     signupForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const fullName = document.getElementById('auth-signup-name').value.trim();
-        const email = document.getElementById('auth-signup-email').value.trim();
+        const fullName = document.getElementById('auth-signup-name').value;
+        const email = document.getElementById('auth-signup-email').value;
         const password = document.getElementById('auth-signup-password').value;
         const errDiv = document.getElementById('auth-signup-error');
 
         errDiv.style.display = 'none';
 
-        if (!supabaseClient) {
-            errDiv.innerText = "Supabase Auth client not initialized.";
-            errDiv.style.display = 'block';
-            return;
-        }
+        // 1. Try Direct Backend Signup (Guarantees instant save in database)
+        try {
+            const res = await fetch(`${APP_CONFIG.RENDER_API_BASE}/auth/signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ full_name: fullName, email, password })
+            });
 
-        const { data, error } = await supabaseClient.auth.signUp({
-            email,
-            password,
-            options: { data: { full_name: fullName } }
-        });
-
-        if (error) {
-            errDiv.innerText = error.message;
-            errDiv.style.display = 'block';
-        } else if (data.session) {
-            // Instant session created
-            showDashboardView(data.session);
-        } else {
-            // Email confirmation required in Supabase settings
-            const { data: loginData, error: loginErr } = await supabaseClient.auth.signInWithPassword({ email, password });
-            if (loginData && loginData.session) {
-                showDashboardView(loginData.session);
+            if (res.ok) {
+                const data = await res.json();
+                localStorage.setItem('governance_auth_token', `user_token_${data.user.id}`);
+                localStorage.setItem('governance_user_profile', JSON.stringify(data.user));
+                showDashboardView(data.user);
+                return;
             } else {
-                errDiv.innerText = "Account created! If login fails, please disable 'Confirm Email' in Supabase Auth settings.";
+                const errJson = await res.json();
+                if (errJson.detail) {
+                    errDiv.innerText = errJson.detail;
+                    errDiv.style.display = 'block';
+                    return;
+                }
+            }
+        } catch (e) {}
+
+        // 2. Fallback to Supabase Auth Signup
+        if (supabaseClient) {
+            const { data, error } = await supabaseClient.auth.signUp({
+                email,
+                password,
+                options: { data: { full_name: fullName } }
+            });
+
+            if (error) {
+                errDiv.innerText = error.message;
                 errDiv.style.display = 'block';
+            } else {
+                const userObj = { full_name: fullName, organization_name: `${fullName}'s Workspace` };
+                localStorage.setItem('governance_user_profile', JSON.stringify(userObj));
+                showDashboardView(userObj);
             }
         }
     });
 
     // Public Guest Demo Mode
     document.getElementById('btn-guest-demo')?.addEventListener('click', () => {
+        localStorage.removeItem('governance_auth_token');
+        localStorage.removeItem('governance_user_profile');
         showDashboardView();
     });
 
     // Logout
     document.getElementById('btn-logout')?.addEventListener('click', async () => {
+        localStorage.removeItem('governance_auth_token');
+        localStorage.removeItem('governance_user_profile');
         if (supabaseClient) {
             await supabaseClient.auth.signOut();
         }
