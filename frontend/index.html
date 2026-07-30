@@ -24,16 +24,9 @@
                 <div class="product-onboarding-text">
                     Integrate the lightweight Governance Interceptor SDK into your LLM Gateway. Every model substitution is automatically recorded, risk assessed, and audited in real time.
                 </div>
-                <div class="product-action-buttons">
-                    <a href="https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-/releases/download/v1.0.0/governance-interceptor-v1.0.0.zip" id="btn-download-sdk" class="btn btn-primary" target="_blank">Download SDK (v1.0.0)</a>
-                    <button class="btn btn-secondary" id="btn-goto-integration">Integration Guide</button>
-                    <a href="https://model-substitution-governance-event.onrender.com/docs" target="_blank" class="btn btn-secondary">API Documentation</a>
-                    <a href="https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-.git" target="_blank" class="btn btn-secondary">GitHub Repository</a>
-                    <button class="btn btn-secondary" id="btn-open-arch">Architecture</button>
-                </div>
             </div>
 
-            <!-- Enterprise System Health & Version Status Bar -->
+            <!-- Enterprise System Health Status Bar -->
             <div class="system-health-bar">
                 <div class="health-item">
                     <span>Backend</span>
@@ -45,17 +38,18 @@
                     <span class="status-dot green" id="dot-db"></span>
                     <span id="text-db">Connected</span>
                 </div>
-                <div class="health-item">
-                    <span>SDK Version</span>
-                    <span class="font-mono">v1.0.0</span>
-                </div>
-                <div class="health-item">
-                    <span>Source</span>
-                    <span class="font-mono">GitHub Releases</span>
-                </div>
                 <button class="btn btn-secondary text-sm" id="btn-refresh">Refresh Data</button>
                 <button class="btn btn-accent text-sm" id="btn-open-sim">Gateway Simulator</button>
             </div>
+        </div>
+
+        <!-- Clean Header Action Buttons Row -->
+        <div class="product-action-buttons">
+            <a href="https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-/releases/download/v1.0.0/governance-interceptor-v1.0.0.zip" id="btn-download-sdk" class="btn btn-primary" target="_blank">Download SDK (v1.0.0)</a>
+            <button class="btn btn-secondary" id="btn-goto-integration">Integration Guide</button>
+            <a href="https://model-substitution-governance-event.onrender.com/docs" target="_blank" class="btn btn-secondary">API Documentation</a>
+            <a href="https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-.git" target="_blank" class="btn btn-secondary">GitHub Repository</a>
+            <button class="btn btn-secondary" id="btn-open-arch">Architecture</button>
         </div>
     </header>
 
@@ -99,13 +93,13 @@
         <section id="tab-integration" class="tab-content active">
             <div class="card">
                 <div class="card-header">
-                    <h2>30-Second SDK & Gateway Integration Guide</h2>
+                    <h2>SDK & Gateway Integration Guide</h2>
                     <a href="https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-/releases/download/v1.0.0/governance-interceptor-v1.0.0.zip" id="btn-download-sdk-card" class="btn btn-primary" target="_blank">Download SDK Package (GitHub Release)</a>
                 </div>
                 <p class="tab-description">Follow these steps to install the lightweight interceptor library into your LLM gateway service and automatically send model substitution events to your tracker.</p>
 
                 <!-- SDK Distribution Info Panel -->
-                <div class="explanation-box margin-bottom" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                <div class="explanation-box margin-bottom">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                         <div>
                             <strong>SDK Distribution Model:</strong> Distributed via <strong>GitHub Releases (Global CDN)</strong> for instant versioned downloads with zero backend cold-start latency.
