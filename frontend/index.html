@@ -10,29 +10,57 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Top Navigation Bar -->
-    <header class="navbar">
-        <div class="logo-area">
-            <div class="logo-icon">MSG</div>
-            <div>
-                <h1>Model Substitution Governance Tracker</h1>
-                <p class="subtitle">An Enterprise Governance Platform to Intercept, Record, Risk-Assess, and Audit LLM Gateway Model Substitutions</p>
+    <!-- Top Product Landing Header -->
+    <header class="product-header">
+        <div class="product-header-top">
+            <div class="product-branding">
+                <div class="product-brand-title">
+                    <span class="logo-badge">MSG</span>
+                    <h1>Model Substitution Governance Tracker</h1>
+                </div>
+                <div class="product-subtitle">
+                    Enterprise Governance Platform for Monitoring, Recording, Risk Assessing, and Auditing LLM Gateway Model Substitutions
+                </div>
+                <div class="product-onboarding-text">
+                    Integrate the lightweight Governance Interceptor SDK into your LLM Gateway. Every model substitution is automatically recorded, risk assessed, and audited in real time.
+                </div>
+                <div class="product-action-buttons">
+                    <a href="downloads/governance-interceptor.zip" class="btn btn-primary" download>Download SDK (v1.0.0)</a>
+                    <button class="btn btn-secondary" id="btn-goto-integration">Integration Guide</button>
+                    <a href="https://model-substitution-governance-event.onrender.com/docs" target="_blank" class="btn btn-secondary">API Documentation</a>
+                    <a href="https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-.git" target="_blank" class="btn btn-secondary">GitHub Repository</a>
+                    <button class="btn btn-secondary" id="btn-open-arch">Architecture</button>
+                </div>
             </div>
-        </div>
-        <div class="nav-right">
-            <div class="status-indicator" id="api-status">
-                <span class="status-dot green"></span> Live API Connected
+
+            <!-- Enterprise System Health Status Bar -->
+            <div class="system-health-bar">
+                <div class="health-item">
+                    <span>Backend</span>
+                    <span class="status-dot green" id="dot-backend"></span>
+                    <span id="text-backend">Online</span>
+                </div>
+                <div class="health-item">
+                    <span>Database</span>
+                    <span class="status-dot green" id="dot-db"></span>
+                    <span id="text-db">Connected</span>
+                </div>
+                <div class="health-item">
+                    <span>SDK</span>
+                    <span class="font-mono">v1.0.0</span>
+                </div>
+                <button class="btn btn-secondary text-sm" id="btn-refresh">Refresh Data</button>
+                <button class="btn btn-accent text-sm" id="btn-open-sim">Gateway Simulator</button>
             </div>
-            <button class="btn btn-secondary" id="btn-refresh">Refresh Data</button>
-            <button class="btn btn-primary" id="btn-open-sim">Gateway Simulator</button>
         </div>
     </header>
 
     <!-- Main Container -->
     <div class="app-container">
-        <!-- Navigation Tabs mapped directly to Problem Statement Deliverables -->
+        <!-- Navigation Tabs -->
         <nav class="tabs-nav">
-            <button class="tab-btn active" data-tab="tab-recorder">Governance Event Recorder</button>
+            <button class="tab-btn active" data-tab="tab-integration">Integration</button>
+            <button class="tab-btn" data-tab="tab-recorder">Governance Event Recorder</button>
             <button class="tab-btn" data-tab="tab-risk">Substitution Risk Assessor</button>
             <button class="tab-btn" data-tab="tab-compliance">Compliance Flag Engine</button>
             <button class="tab-btn" data-tab="tab-audit">Retroactive Compliance Audit</button>
@@ -63,11 +91,135 @@
             </div>
         </section>
 
-        <!-- TAB 1: GOVERNANCE EVENT RECORDER -->
-        <section id="tab-recorder" class="tab-content active">
+        <!-- TAB 1: INTEGRATION (NEW FIRST TAB) -->
+        <section id="tab-integration" class="tab-content active">
             <div class="card">
                 <div class="card-header">
-                    <h2>Governance Event Log (Recorded Substitutions)</h2>
+                    <h2>30-Second SDK & Gateway Integration Guide</h2>
+                    <a href="downloads/governance-interceptor.zip" class="btn btn-primary" download>Download SDK Package</a>
+                </div>
+                <p class="tab-description">Follow these 5 simple steps to install the lightweight interceptor library into your LLM gateway service and automatically send model substitution events to your tracker.</p>
+                
+                <div class="integration-grid">
+                    <!-- Step 1 -->
+                    <div class="step-card">
+                        <div>
+                            <div class="step-header">
+                                <span class="step-badge">Step 1</span>
+                                <h3>Download SDK</h3>
+                            </div>
+                            <div class="step-body">
+                                <p>Get the official <code>governance-interceptor</code> Python package containing source code, installation configuration, and examples.</p>
+                            </div>
+                        </div>
+                        <a href="downloads/governance-interceptor.zip" class="btn btn-secondary" download>Download SDK (.zip)</a>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="step-card">
+                        <div>
+                            <div class="step-header">
+                                <span class="step-badge">Step 2</span>
+                                <h3>Installation</h3>
+                            </div>
+                            <div class="step-body">
+                                <p>Install the interceptor directly into your gateway virtual environment via pip:</p>
+                                <div class="code-box">pip install governance-interceptor</div>
+                                <p class="text-sm color-muted">Or install from local wheel package:</p>
+                                <div class="code-box">pip install governance-interceptor.whl</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="step-card">
+                        <div>
+                            <div class="step-header">
+                                <span class="step-badge">Step 3</span>
+                                <h3>Configuration</h3>
+                            </div>
+                            <div class="step-body">
+                                <p>Set your Tracker endpoint URL and optional API key environment variables:</p>
+                                <div class="code-box">TRACKER_URL="https://model-substitution-governance-event.onrender.com"
+API_KEY="your-enterprise-api-key"</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="step-card">
+                        <div>
+                            <div class="step-header">
+                                <span class="step-badge">Step 4</span>
+                                <h3>Import & Intercept</h3>
+                            </div>
+                            <div class="step-body">
+                                <p>Attach the interceptor right after your gateway selects the target model:</p>
+                                <div class="code-box">from governance_interceptor import GovernanceInterceptor
+
+interceptor = GovernanceInterceptor(tracker_url=TRACKER_URL)
+
+# After routing decision:
+interceptor.intercept(
+    requested_model="GPT-5",
+    actual_model="GPT-4o Mini",
+    reason="cost",
+    agent_id="HR-Agent",
+    session_id="session-102"
+)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 5 -->
+                    <div class="step-card">
+                        <div>
+                            <div class="step-header">
+                                <span class="step-badge">Step 5</span>
+                                <h3>Gateway Routing Flow</h3>
+                            </div>
+                            <div class="step-body">
+                                <p>Execution lifecycle between your gateway and the Cloud Tracker:</p>
+                                <div class="code-box">Client Request
+      ↓
+Requested Model = GPT-5
+      ↓
+Routing Engine → Actual Model = GPT-4o Mini
+      ↓
+Governance Interceptor (POST /api/v1/events)
+      ↓
+Call Provider API (OpenAI / Claude / Gemini)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 6 -->
+                    <div class="step-card">
+                        <div>
+                            <div class="step-header">
+                                <span class="step-badge">Step 6</span>
+                                <h3>Try It Live</h3>
+                            </div>
+                            <div class="step-body">
+                                <p>Download a runnable sample gateway application to test substitutions locally:</p>
+                                <a href="downloads/sample-gateway.zip" class="btn btn-secondary text-sm margin-bottom" download>Download Sample Gateway (.zip)</a>
+                                <p class="text-sm color-muted margin-top">Or click below to simulate live gateway traffic directly onto this dashboard:</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-accent" id="btn-run-sim-step">Run Live Simulation</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: GOVERNANCE EVENT RECORDER -->
+        <section id="tab-recorder" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title-group">
+                        <h2>Governance Event Log (Recorded Substitutions)</h2>
+                        <button class="help-btn" data-help="recorder">ⓘ What is this?</button>
+                    </div>
                     <div class="filter-controls">
                         <select id="filter-agent" class="input-select">
                             <option value="">All Agents</option>
@@ -115,11 +267,14 @@
             </div>
         </section>
 
-        <!-- TAB 2: SUBSTITUTION RISK ASSESSOR -->
+        <!-- TAB 3: SUBSTITUTION RISK ASSESSOR -->
         <section id="tab-risk" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2>Substitution Risk Assessor</h2>
+                    <div class="card-title-group">
+                        <h2>Substitution Risk Assessor</h2>
+                        <button class="help-btn" data-help="risk">ⓘ What is this?</button>
+                    </div>
                 </div>
                 <p class="tab-description">Compares the context window capability profile of requested versus actual models and flags material capability downgrades (&gt;50% context reduction) as High or Critical risk.</p>
                 <div class="table-container">
@@ -142,11 +297,14 @@
             </div>
         </section>
 
-        <!-- TAB 3: COMPLIANCE FLAG ENGINE -->
+        <!-- TAB 4: COMPLIANCE FLAG ENGINE -->
         <section id="tab-compliance" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2>Compliance Flag Engine</h2>
+                    <div class="card-title-group">
+                        <h2>Compliance Flag Engine</h2>
+                        <button class="help-btn" data-help="compliance">ⓘ What is this?</button>
+                    </div>
                 </div>
                 <p class="tab-description">Evaluates agent compliance policies against approved model whitelists. Substitutions landing outside approved bounds automatically trigger a compliance flag requiring review.</p>
                 <div class="table-container">
@@ -167,11 +325,14 @@
             </div>
         </section>
 
-        <!-- TAB 4: RETROACTIVE COMPLIANCE AUDIT (BONUS) -->
+        <!-- TAB 5: RETROACTIVE COMPLIANCE AUDIT -->
         <section id="tab-audit" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2>Retroactive Compliance & Risk Exposure Audit</h2>
+                    <div class="card-title-group">
+                        <h2>Retroactive Compliance & Risk Exposure Audit</h2>
+                        <button class="help-btn" data-help="audit">ⓘ What is this?</button>
+                    </div>
                     <button class="btn btn-primary" id="btn-run-audit">Run Retroactive Audit</button>
                 </div>
                 <p class="tab-description">Computes historical compliance exposure across past substitution logs, auditing total requests served by unapproved models and high-risk exposure ratios.</p>
@@ -181,11 +342,14 @@
             </div>
         </section>
 
-        <!-- TAB 5: MODEL CAPABILITY PROFILES -->
+        <!-- TAB 6: MODEL CAPABILITY PROFILES -->
         <section id="tab-models" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2>Model Capability Profiles</h2>
+                    <div class="card-title-group">
+                        <h2>Model Capability Profiles</h2>
+                        <button class="help-btn" data-help="models">ⓘ What is this?</button>
+                    </div>
                     <input type="text" id="search-models" class="input-text" placeholder="Search models (e.g. GPT-5, Claude, Gemini, Llama)...">
                 </div>
                 <p class="tab-description">Repository of model capability specifications sourced directly from official model provider documentation (OpenAI, Anthropic, Google, Meta, DeepSeek, Mistral, Cohere, xAI, Microsoft).</p>
@@ -207,7 +371,7 @@
         </section>
     </div>
 
-    <!-- EVENT DETAIL MODAL -->
+    <!-- EVENT DETAIL INSPECTION MODAL -->
     <div class="modal-backdrop" id="event-modal">
         <div class="modal-card">
             <div class="modal-header">
@@ -216,6 +380,65 @@
             </div>
             <div class="modal-body" id="modal-content">
                 <!-- Injected via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- FEATURE HELP MODAL ("What is this?") -->
+    <div class="modal-backdrop" id="help-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="help-modal-title">Module Overview</h3>
+                <button class="modal-close" id="help-close-btn">&times;</button>
+            </div>
+            <div class="modal-body" id="help-modal-content">
+                <!-- Injected via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ARCHITECTURE MODAL -->
+    <div class="modal-backdrop" id="arch-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Enterprise System Architecture</h3>
+                <button class="modal-close" id="arch-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="arch-flow-box">
+Enterprise AI Application
+       │
+       ▼
+Existing LLM Gateway (LiteLLM / Portkey / Custom)
+       │
+       ├── Routing Decision Made (Requested != Actual)
+       │
+       ▼
+Governance Interceptor SDK (pip install governance-interceptor)
+       │
+       ├── POST /api/v1/events (Async / Non-blocking)
+       │
+       ▼
+FastAPI Cloud Tracker Service (Hosted on Render)
+       ├── Ingestion & Validation Router
+       ├── Risk Assessor Engine (Context Window Drop Analysis)
+       ├── Compliance Flag Engine (Agent Whitelist Policy Match)
+       │
+       ▼
+PostgreSQL Relational Storage (Hosted on Supabase)
+       │
+       ▼
+Enterprise Governance Dashboard (Hosted on Vercel)
+                </div>
+                <div class="margin-top">
+                    <h4>Component Overview</h4>
+                    <p class="text-sm color-muted margin-top">
+                        • <strong>Governance Interceptor SDK</strong>: Lightweight Python package installed directly inside the customer's gateway code.<br>
+                        • <strong>Tracker API (FastAPI)</strong>: High-throughput cloud backend that receives events, performs automated risk assessment, and evaluates compliance.<br>
+                        • <strong>Database (Supabase PostgreSQL)</strong>: Enterprise relational database storing models, agent policies, and full historical substitution audit logs.<br>
+                        • <strong>Web Dashboard (Vercel)</strong>: Real-time monitoring UI displaying event streams, risk alerts, compliance violations, and retroactive audit reports.
+                    </p>
+                </div>
             </div>
         </div>
     </div>

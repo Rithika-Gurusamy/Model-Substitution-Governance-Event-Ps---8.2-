@@ -16,7 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const complianceTbody = document.getElementById('compliance-tbody');
     const modelsTbody = document.getElementById('models-tbody');
     const auditContainer = document.getElementById('audit-results-container');
-    const apiStatus = document.getElementById('api-status');
+
+    const dotBackend = document.getElementById('dot-backend');
+    const textBackend = document.getElementById('text-backend');
+    const dotDb = document.getElementById('dot-db');
+    const textDb = document.getElementById('text-db');
 
     const kpiTotal = document.getElementById('kpi-total');
     const kpiHighRisk = document.getElementById('kpi-high-risk');
@@ -31,11 +35,101 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btnRefresh = document.getElementById('btn-refresh');
     const btnOpenSim = document.getElementById('btn-open-sim');
+    const btnRunSimStep = document.getElementById('btn-run-sim-step');
     const btnRunAudit = document.getElementById('btn-run-audit');
+    const btnGotoIntegration = document.getElementById('btn-goto-integration');
 
+    // Modals
     const eventModal = document.getElementById('event-modal');
     const modalCloseBtn = document.getElementById('modal-close-btn');
     const modalContent = document.getElementById('modal-content');
+
+    const helpModal = document.getElementById('help-modal');
+    const helpCloseBtn = document.getElementById('help-close-btn');
+    const helpModalTitle = document.getElementById('help-modal-title');
+    const helpModalContent = document.getElementById('help-modal-content');
+
+    const archModal = document.getElementById('arch-modal');
+    const archCloseBtn = document.getElementById('arch-close-btn');
+    const btnOpenArch = document.getElementById('btn-open-arch');
+
+    // Help Panel Content Definitions
+    const HELP_CONTENT = {
+        recorder: {
+            title: "Governance Event Recorder",
+            body: `
+                <div class="detail-row"><strong>Purpose:</strong> Records every detected model substitution from an enterprise LLM Gateway.</div>
+                <div class="detail-row"><strong>Captured Fields:</strong>
+                    <ul style="margin-left: 1.5rem; margin-top: 0.3rem;">
+                        <li>Requested Model</li>
+                        <li>Actual Model Used</li>
+                        <li>Substitution Reason (Cost, Availability, Policy)</li>
+                        <li>Timestamp</li>
+                        <li>Agent ID</li>
+                        <li>Session ID</li>
+                    </ul>
+                </div>
+                <div class="explanation-box margin-top">
+                    <strong>Why it matters in enterprise governance:</strong><br>
+                    Provides an immutable, auditable event stream for AI routing decisions, enabling compliance teams to track cost-cutting or availability fallbacks across enterprise agents.
+                </div>
+            `
+        },
+        risk: {
+            title: "Substitution Risk Assessor",
+            body: `
+                <div class="detail-row"><strong>Purpose:</strong> Determines whether a model substitution represents a material capability downgrade.</div>
+                <div class="detail-row"><strong>Current Implementation:</strong> Compares Context Window capacity drop between requested and actual models.</div>
+                <div class="detail-row"><strong>Risk Rule Matrix:</strong>
+                    <ul style="margin-left: 1.5rem; margin-top: 0.3rem;">
+                        <li><strong>Low Risk:</strong> &lt; 25% drop in context capacity</li>
+                        <li><strong>Medium Risk:</strong> 25% – 50% drop in context capacity</li>
+                        <li><strong>High Risk:</strong> 50% – 75% drop in context capacity</li>
+                        <li><strong>Critical Risk:</strong> &ge; 75% drop (Material Capability Downgrade)</li>
+                    </ul>
+                </div>
+                <div class="explanation-box margin-top">
+                    <strong>Future Expansion:</strong> Guardrail behavior benchmarking, bias score comparisons, reasoning evaluations, and safety benchmarks.
+                </div>
+            `
+        },
+        compliance: {
+            title: "Compliance Flag Engine",
+            body: `
+                <div class="detail-row"><strong>Purpose:</strong> Evaluates agent compliance policies against approved model whitelists.</div>
+                <div class="detail-row"><strong>Policy Enforcement:</strong> If an agent's compliance record specifies an approved model list, routing to an unapproved model automatically sets a <code>compliance_flagged = True</code> violation flag requiring manual review.</div>
+                <div class="explanation-box margin-top">
+                    <strong>Why it matters:</strong> Prevents agents handling sensitive PII, HR data, or financial risk from being quietly routed to lower-tier unapproved model providers.
+                </div>
+            `
+        },
+        audit: {
+            title: "Retroactive Compliance Audit",
+            body: `
+                <div class="detail-row"><strong>Purpose:</strong> Computes total compliance exposure across historical substitution logs.</div>
+                <div class="detail-row"><strong>Calculated Metrics:</strong>
+                    <ul style="margin-left: 1.5rem; margin-top: 0.3rem;">
+                        <li>Total requests served by unapproved models</li>
+                        <li>Compliance violation rate (%)</li>
+                        <li>High-risk capability exposure ratio (%)</li>
+                    </ul>
+                </div>
+                <div class="explanation-box margin-top">
+                    <strong>Bonus Requirement:</strong> Enables compliance auditors to generate historical impact reports across arbitrary date ranges.
+                </div>
+            `
+        },
+        models: {
+            title: "Model Capability Profiles",
+            body: `
+                <div class="detail-row"><strong>Purpose:</strong> Central directory of model capability specifications.</div>
+                <div class="detail-row"><strong>Data Sources:</strong> Sourced directly from official documentation (OpenAI, Anthropic, Google, Meta, DeepSeek, Mistral, Cohere, xAI, Microsoft).</div>
+                <div class="explanation-box margin-top">
+                    Used by the Risk Assessor engine to perform deterministic capability comparison lookups.
+                </div>
+            `
+        }
+    };
 
     // Tab Navigation
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -47,18 +141,49 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    if (btnGotoIntegration) {
+        btnGotoIntegration.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            const intTabBtn = document.querySelector('[data-tab="tab-integration"]');
+            if (intTabBtn) intTabBtn.classList.add('active');
+            document.getElementById('tab-integration').classList.add('active');
+            window.scrollTo({ top: 400, behavior: 'smooth' });
+        });
+    }
+
     // Modal Close handlers
     modalCloseBtn.addEventListener('click', () => eventModal.classList.remove('active'));
-    eventModal.addEventListener('click', (e) => {
-        if (e.target === eventModal) eventModal.classList.remove('active');
+    eventModal.addEventListener('click', (e) => { if (e.target === eventModal) eventModal.classList.remove('active'); });
+
+    helpCloseBtn.addEventListener('click', () => helpModal.classList.remove('active'));
+    helpModal.addEventListener('click', (e) => { if (e.target === helpModal) helpModal.classList.remove('active'); });
+
+    archCloseBtn.addEventListener('click', () => archModal.classList.remove('active'));
+    archModal.addEventListener('click', (e) => { if (e.target === archModal) archModal.classList.remove('active'); });
+
+    if (btnOpenArch) {
+        btnOpenArch.addEventListener('click', () => archModal.classList.add('active'));
+    }
+
+    // Attach Help Modal Listeners
+    document.querySelectorAll('.help-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const key = btn.dataset.help;
+            if (HELP_CONTENT[key]) {
+                helpModalTitle.innerText = HELP_CONTENT[key].title;
+                helpModalContent.innerHTML = HELP_CONTENT[key].body;
+                helpModal.classList.add('active');
+            }
+        });
     });
 
     // Refresh Data
     btnRefresh.addEventListener('click', loadAllData);
-    btnOpenSim.addEventListener('click', async () => {
-        btnOpenSim.innerText = 'Simulating...';
+    
+    async function runSimulator() {
+        if (btnOpenSim) btnOpenSim.innerText = 'Simulating...';
         try {
-            // Trigger sample substitutions via API calls
             const testPayloads = [
                 { requested_model: "GPT-5", actual_model: "GPT-4o Mini", reason: "cost", agent_id: "HR-Agent", session_id: "sim-" + Math.floor(Math.random() * 10000) },
                 { requested_model: "Claude Opus 4", actual_model: "Gemini 1.5 Flash", reason: "availability", agent_id: "Finance-Bot", session_id: "sim-" + Math.floor(Math.random() * 10000) },
@@ -77,9 +202,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             console.error('Simulator error:', e);
         } finally {
-            btnOpenSim.innerText = 'Gateway Simulator';
+            if (btnOpenSim) btnOpenSim.innerText = 'Gateway Simulator';
         }
-    });
+    }
+
+    if (btnOpenSim) btnOpenSim.addEventListener('click', runSimulator);
+    if (btnRunSimStep) btnRunSimStep.addEventListener('click', runSimulator);
 
     // Run Retroactive Audit Button
     btnRunAudit.addEventListener('click', loadAuditReport);
@@ -115,13 +243,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch(`${API_BASE}/events?limit=200`);
             if (res.ok) {
                 eventsData = await res.json();
-                if (apiStatus) apiStatus.innerHTML = '<span class="status-dot green"></span> Live API Connected';
+                updateHealthStatus(true, true);
             } else {
-                if (apiStatus) apiStatus.innerHTML = '<span class="status-dot red"></span> API Disconnected';
+                updateHealthStatus(false, false);
             }
         } catch (err) {
             console.error('Error fetching events:', err);
-            if (apiStatus) apiStatus.innerHTML = '<span class="status-dot red"></span> API Offline';
+            updateHealthStatus(false, false);
         }
     }
 
@@ -144,6 +272,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (err) {
             console.error('Error fetching agents:', err);
+        }
+    }
+
+    function updateHealthStatus(backendOk, dbOk) {
+        if (dotBackend && textBackend) {
+            dotBackend.className = backendOk ? 'status-dot green' : 'status-dot red';
+            textBackend.innerText = backendOk ? 'Online' : 'Offline';
+        }
+        if (dotDb && textDb) {
+            dotDb.className = dbOk ? 'status-dot green' : 'status-dot red';
+            textDb.innerText = dbOk ? 'Connected' : 'Disconnected';
         }
     }
 
@@ -327,27 +466,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Modal Inspection Helper
+    // EXPANDED SHOWCASE "INSPECT" EVENT DETAIL MODAL
     window.inspectEvent = function(eventId) {
         const ev = eventsData.find(e => e.id === eventId);
         if (!ev) return;
 
+        // Context capacities lookup
+        const reqModelObj = modelsData.find(m => m.model_name === ev.requested_model);
+        const actModelObj = modelsData.find(m => m.model_name === ev.actual_model);
+
+        const reqCap = reqModelObj ? reqModelObj.context_window.toLocaleString() + ' tokens' : 'Unknown';
+        const actCap = actModelObj ? actModelObj.context_window.toLocaleString() + ' tokens' : 'Unknown';
+
         modalContent.innerHTML = `
             <div class="detail-row"><strong>Event ID:</strong> <span class="font-mono">${ev.id}</span></div>
             <div class="detail-row"><strong>Timestamp:</strong> ${new Date(ev.timestamp).toLocaleString()}</div>
-            <div class="detail-row"><strong>Agent ID:</strong> ${escapeHtml(ev.agent_id)}</div>
+            <div class="detail-row"><strong>Agent ID:</strong> <strong>${escapeHtml(ev.agent_id)}</strong></div>
             <div class="detail-row"><strong>Session ID:</strong> <span class="font-mono">${escapeHtml(ev.session_id)}</span></div>
             <hr class="divider"/>
+            
             <div class="detail-row"><strong>Requested Model:</strong> <span class="model-tag requested">${escapeHtml(ev.requested_model)}</span></div>
             <div class="detail-row"><strong>Actual Model Used:</strong> <span class="model-tag actual">${escapeHtml(ev.actual_model)}</span></div>
             <div class="detail-row"><strong>Substitution Reason:</strong> <span class="badge reason-${ev.reason.toLowerCase()}">${escapeHtml(ev.reason.toUpperCase())}</span></div>
             <hr class="divider"/>
-            <div class="detail-row"><strong>Risk Assessment Level:</strong> <span class="badge risk-${ev.risk_level.toLowerCase()}">${escapeHtml(ev.risk_level)}</span></div>
-            <div class="detail-row"><strong>Context Capacity Downgrade:</strong> ${ev.context_downgrade_pct}% reduction</div>
-            <div class="detail-row"><strong>Risk Analysis Details:</strong> ${escapeHtml(ev.risk_reason)}</div>
+            
+            <div class="detail-row"><strong>Capability Comparison (Context Window):</strong></div>
+            <div class="explanation-box">
+                <div>Requested Model Capacity: <strong>${reqCap}</strong></div>
+                <div>Actual Model Used Capacity: <strong>${actCap}</strong></div>
+                <div class="margin-top"><strong>Percentage Downgrade: ${ev.context_downgrade_pct}% Reduction</strong></div>
+            </div>
+            
+            <div class="detail-row margin-top"><strong>Risk Assessment Level:</strong> <span class="badge risk-${ev.risk_level.toLowerCase()}">${escapeHtml(ev.risk_level)}</span></div>
+            <div class="explanation-box">${escapeHtml(ev.risk_reason)}</div>
             <hr class="divider"/>
+            
             <div class="detail-row"><strong>Compliance Status:</strong> ${ev.compliance_flagged ? '<span class="badge status-flagged">VIOLATION FLAGGED</span>' : '<span class="badge status-approved">COMPLIANT</span>'}</div>
-            ${ev.compliance_reason ? `<div class="detail-row text-danger"><strong>Violation Reason:</strong> ${escapeHtml(ev.compliance_reason)}</div>` : ''}
+            ${ev.compliance_reason ? `<div class="explanation-box text-danger"><strong>Compliance Violation Reason:</strong><br>${escapeHtml(ev.compliance_reason)}</div>` : '<div class="explanation-box text-success">Substituted model is in the agent\'s approved model whitelist policy.</div>'}
         `;
         eventModal.classList.add('active');
     };
