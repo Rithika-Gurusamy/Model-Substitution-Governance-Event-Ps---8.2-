@@ -12,8 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // DOM Elements
     const eventsTbody = document.getElementById('events-tbody');
+    const riskTbody = document.getElementById('risk-tbody');
+    const complianceTbody = document.getElementById('compliance-tbody');
     const modelsTbody = document.getElementById('models-tbody');
-    const agentsTbody = document.getElementById('agents-tbody');
     const auditContainer = document.getElementById('audit-results-container');
     const apiStatus = document.getElementById('api-status');
 
@@ -103,8 +104,9 @@ document.addEventListener('DOMContentLoaded', () => {
         ]);
         updateKPIs();
         renderEventsTable();
+        renderRiskTable();
+        renderComplianceTable();
         renderModelsTable();
-        renderAgentsTable();
         populateAgentFilter();
     }
 
@@ -183,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (filtered.length === 0) {
-            eventsTbody.innerHTML = `<tr><td colspan="8" class="text-center">No governance events match the selected filters. Click "⚡ Gateway Simulator" to generate sample live events.</td></tr>`;
+            eventsTbody.innerHTML = `<tr><td colspan="8" class="text-center">No governance events recorded yet. Click "⚡ Gateway Simulator" to generate live events.</td></tr>`;
             return;
         }
 
@@ -210,6 +212,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
     }
 
+    function renderRiskTable() {
+        if (!riskTbody) return;
+        if (eventsData.length === 0) {
+            riskTbody.innerHTML = `<tr><td colspan="6" class="text-center">No substitution events recorded yet.</td></tr>`;
+            return;
+        }
+
+        riskTbody.innerHTML = eventsData.map(e => {
+            const riskBadgeClass = `badge risk-${e.risk_level.toLowerCase()}`;
+            return `
+                <tr>
+                    <td><strong>${escapeHtml(e.agent_id)}</strong></td>
+                    <td><span class="model-tag requested">${escapeHtml(e.requested_model)}</span></td>
+                    <td><span class="model-tag actual">${escapeHtml(e.actual_model)}</span></td>
+                    <td><span class="font-mono">${e.context_downgrade_pct}%</span></td>
+                    <td><span class="${riskBadgeClass}">${escapeHtml(e.risk_level)}</span></td>
+                    <td class="text-sm">${escapeHtml(e.risk_reason)}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function renderComplianceTable() {
+        if (!complianceTbody) return;
+        if (agentsData.length === 0) {
+            complianceTbody.innerHTML = `<tr><td colspan="4" class="text-center">No agent compliance policies configured.</td></tr>`;
+            return;
+        }
+
+        complianceTbody.innerHTML = agentsData.map(a => `
+            <tr>
+                <td><strong>${escapeHtml(a.agent_id)}</strong></td>
+                <td>${escapeHtml(a.agent_name)}</td>
+                <td>
+                    ${a.approved_models.map(m => `<span class="model-tag approved">${escapeHtml(m)}</span>`).join(' ')}
+                </td>
+                <td><span class="badge status-approved">Whitelist Policy Active</span></td>
+            </tr>
+        `).join('');
+    }
+
     function renderModelsTable() {
         const query = (searchModels ? searchModels.value : '').toLowerCase();
         const filtered = modelsData.filter(m => m.model_name.toLowerCase().includes(query));
@@ -224,24 +267,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td><strong>${escapeHtml(m.model_name)}</strong></td>
                 <td><span class="font-mono">${m.context_window.toLocaleString()} tokens</span></td>
                 <td><span class="badge status-approved">Context Profile Verified</span></td>
-            </tr>
-        `).join('');
-    }
-
-    function renderAgentsTable() {
-        if (agentsData.length === 0) {
-            agentsTbody.innerHTML = `<tr><td colspan="4" class="text-center">No agent policies configured.</td></tr>`;
-            return;
-        }
-
-        agentsTbody.innerHTML = agentsData.map(a => `
-            <tr>
-                <td><strong>${escapeHtml(a.agent_id)}</strong></td>
-                <td>${escapeHtml(a.agent_name)}</td>
-                <td>${escapeHtml(a.description || 'N/A')}</td>
-                <td>
-                    ${a.approved_models.map(m => `<span class="model-tag approved">${escapeHtml(m)}</span>`).join(' ')}
-                </td>
             </tr>
         `).join('');
     }

@@ -30,12 +30,13 @@
 
     <!-- Main Container -->
     <div class="app-container">
-        <!-- Navigation Tabs -->
+        <!-- Navigation Tabs mapped directly to Problem Statement Deliverables -->
         <nav class="tabs-nav">
-            <button class="tab-btn active" data-tab="tab-events">📊 Governance Event Stream</button>
+            <button class="tab-btn active" data-tab="tab-recorder">📝 Governance Event Recorder</button>
+            <button class="tab-btn" data-tab="tab-risk">⚠️ Substitution Risk Assessor</button>
+            <button class="tab-btn" data-tab="tab-compliance">🚨 Compliance Flag Engine</button>
             <button class="tab-btn" data-tab="tab-audit">⚖️ Retroactive Compliance Audit</button>
-            <button class="tab-btn" data-tab="tab-models">🧠 Model Directory & Context Windows</button>
-            <button class="tab-btn" data-tab="tab-agents">🤖 Agent Whitelist Policies</button>
+            <button class="tab-btn" data-tab="tab-models">🧠 Model Capability Profiles</button>
         </nav>
 
         <!-- KPI Executive Summary Cards -->
@@ -62,11 +63,11 @@
             </div>
         </section>
 
-        <!-- TAB 1: GOVERNANCE EVENT STREAM -->
-        <section id="tab-events" class="tab-content active">
+        <!-- TAB 1: GOVERNANCE EVENT RECORDER -->
+        <section id="tab-recorder" class="tab-content active">
             <div class="card">
                 <div class="card-header">
-                    <h2>Governance Substitution Event Log</h2>
+                    <h2>Governance Event Log (Recorded Substitutions)</h2>
                     <div class="filter-controls">
                         <select id="filter-agent" class="input-select">
                             <option value="">All Agents</option>
@@ -113,11 +114,63 @@
             </div>
         </section>
 
-        <!-- TAB 2: RETROACTIVE COMPLIANCE AUDIT -->
+        <!-- TAB 2: SUBSTITUTION RISK ASSESSOR -->
+        <section id="tab-risk" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Substitution Risk Assessor (Capability Downgrade Analysis)</h2>
+                </div>
+                <p class="subtitle margin-bottom">Evaluates context window capacity drops between requested vs actual model. Flags material downgrades (&gt;50% context reduction) as High/Critical risk.</p>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Agent ID</th>
+                                <th>Requested Model</th>
+                                <th>Actual Model</th>
+                                <th>Context Downgrade %</th>
+                                <th>Risk Level</th>
+                                <th>Risk Assessment Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="risk-tbody">
+                            <tr><td colspan="6" class="text-center">Loading capability risk assessments...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: COMPLIANCE FLAG ENGINE -->
+        <section id="tab-compliance" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Compliance Flag Engine & Agent Approved Whitelists</h2>
+                </div>
+                <p class="subtitle margin-bottom">Enforces agent compliance policies. Flags substitutions to unapproved models for manual compliance review.</p>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Agent ID</th>
+                                <th>Agent Name</th>
+                                <th>Approved Model Whitelist</th>
+                                <th>Compliance Policy Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="compliance-tbody">
+                            <tr><td colspan="4" class="text-center">Loading agent compliance policies...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: RETROACTIVE COMPLIANCE AUDIT (BONUS) -->
         <section id="tab-audit" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2>Retroactive Compliance & Risk Exposure Audit</h2>
+                    <h2>Retroactive Compliance & Risk Exposure Audit (Bonus Feature)</h2>
                     <button class="btn btn-primary" id="btn-run-audit">⚡ Run Retroactive Audit</button>
                 </div>
                 <div id="audit-results-container">
@@ -126,11 +179,11 @@
             </div>
         </section>
 
-        <!-- TAB 3: MODEL DIRECTORY & CONTEXT WINDOWS -->
+        <!-- TAB 5: MODEL CAPABILITY PROFILES -->
         <section id="tab-models" class="tab-content">
             <div class="card">
                 <div class="card-header">
-                    <h2>Supported Model Profiles & Context Windows</h2>
+                    <h2>Supported Model Capability Profiles & Context Windows</h2>
                     <input type="text" id="search-models" class="input-text" placeholder="🔍 Search models (e.g. GPT-5, Claude, Gemini, Llama)...">
                 </div>
                 <div class="table-container">
@@ -139,35 +192,11 @@
                             <tr>
                                 <th>Model Name</th>
                                 <th>Context Window Capacity</th>
-                                <th>Capability Status</th>
+                                <th>Capability Profile Status</th>
                             </tr>
                         </thead>
                         <tbody id="models-tbody">
                             <tr><td colspan="3" class="text-center">Loading model profiles...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- TAB 4: AGENT WHITELIST POLICIES -->
-        <section id="tab-agents" class="tab-content">
-            <div class="card">
-                <div class="card-header">
-                    <h2>Agent Approved Model Whitelist Policies</h2>
-                </div>
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Agent ID</th>
-                                <th>Agent Name</th>
-                                <th>Description</th>
-                                <th>Approved Model Whitelist</th>
-                            </tr>
-                        </thead>
-                        <tbody id="agents-tbody">
-                            <tr><td colspan="4" class="text-center">Loading agent policies...</td></tr>
                         </tbody>
                     </table>
                 </div>

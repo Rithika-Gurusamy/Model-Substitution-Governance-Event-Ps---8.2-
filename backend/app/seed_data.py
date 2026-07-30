@@ -1,5 +1,7 @@
+import uuid
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
-from backend.app.models.models import ModelProfile, Agent, ApprovedModel
+from backend.app.models.models import ModelProfile, Agent, ApprovedModel, GovernanceEvent
 
 SEED_MODELS = [
     # OpenAI Series
@@ -125,3 +127,79 @@ def seed_database(db: Session):
             for m_name in agent_data["approved_models"]:
                 db.add(ApprovedModel(agent_db_id=agent_obj.id, model_name=m_name))
             db.commit()
+
+    # Pre-seed initial demonstration events so recruiters immediately see live data!
+    existing_events_count = db.query(GovernanceEvent).count()
+    if existing_events_count == 0:
+        now = datetime.now(timezone.utc)
+        sample_events = [
+            {
+                "requested_model": "GPT-5",
+                "actual_model": "GPT-4o Mini",
+                "reason": "cost",
+                "agent_id": "HR-Agent",
+                "session_id": "sess-hr-8812",
+                "risk_level": "Critical",
+                "risk_reason": "CRITICAL RISK: Severe material capability downgrade (87.2% drop in context capacity: 1,000,000 → 128,000 tokens). Risk of prompt truncation or severe context loss.",
+                "context_downgrade_pct": 87.2,
+                "compliance_flagged": True,
+                "compliance_reason": "COMPLIANCE VIOLATION: Substituted model 'GPT-4o Mini' is not in approved list for agent 'HR-Agent' (GPT-4, GPT-4o, GPT-5, Claude Sonnet 3.7, Claude Opus 3).",
+                "timestamp": now - timedelta(minutes=45)
+            },
+            {
+                "requested_model": "Claude Opus 4",
+                "actual_model": "Gemini 1.5 Flash",
+                "reason": "availability",
+                "agent_id": "Finance-Bot",
+                "session_id": "sess-fin-9941",
+                "risk_level": "Low",
+                "risk_reason": "LOW RISK: Context window capacity maintained or increased (200,000 → 1,000,000 tokens).",
+                "context_downgrade_pct": 0.0,
+                "compliance_flagged": True,
+                "compliance_reason": "COMPLIANCE VIOLATION: Substituted model 'Gemini 1.5 Flash' is not in approved list for agent 'Finance-Bot' (GPT-4, GPT-4.1, Claude Opus 4, Gemini 1.5 Pro, Gemini 2.5 Pro).",
+                "timestamp": now - timedelta(minutes=30)
+            },
+            {
+                "requested_model": "GPT-4",
+                "actual_model": "Llama 3.1 8B",
+                "reason": "policy",
+                "agent_id": "Support-Router",
+                "session_id": "sess-sup-1042",
+                "risk_level": "Low",
+                "risk_reason": "LOW RISK: Context window capacity maintained or increased (128,000 → 128,000 tokens).",
+                "context_downgrade_pct": 0.0,
+                "compliance_flagged": False,
+                "compliance_reason": None,
+                "timestamp": now - timedelta(minutes=15)
+            },
+            {
+                "requested_model": "Claude Opus 4",
+                "actual_model": "Gemini 1.5 Pro",
+                "reason": "availability",
+                "agent_id": "Finance-Bot",
+                "session_id": "sess-fin-9950",
+                "risk_level": "Low",
+                "risk_reason": "LOW RISK: Context window capacity maintained or increased (200,000 → 2,000,000 tokens).",
+                "context_downgrade_pct": 0.0,
+                "compliance_flagged": False,
+                "compliance_reason": None,
+                "timestamp": now - timedelta(minutes=5)
+            }
+        ]
+        for se in sample_events:
+            event_obj = GovernanceEvent(
+                id=str(uuid.uuid4()),
+                requested_model=se["requested_model"],
+                actual_model=se["actual_model"],
+                reason=se["reason"],
+                agent_id=se["agent_id"],
+                session_id=se["session_id"],
+                risk_level=se["risk_level"],
+                risk_reason=se["risk_reason"],
+                context_downgrade_pct=se["context_downgrade_pct"],
+                compliance_flagged=se["compliance_flagged"],
+                compliance_reason=se["compliance_reason"],
+                timestamp=se["timestamp"]
+            )
+            db.add(event_obj)
+        db.commit()
