@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Dynamic API Base URL setup
     let API_BASE = '/api/v1';
     if (window.location.hostname.includes('vercel.app') || window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-        API_BASE = 'https://model-substitution-governance-event.onrender.com/api/v1';
+        API_BASE = (typeof APP_CONFIG !== 'undefined' && APP_CONFIG.RENDER_API_BASE) ? APP_CONFIG.RENDER_API_BASE : 'https://model-substitution-governance-event.onrender.com/api/v1';
     }
 
     // State Variables
@@ -53,12 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const archModal = document.getElementById('arch-modal');
     const archCloseBtn = document.getElementById('arch-close-btn');
     const btnOpenArch = document.getElementById('btn-open-arch');
-
-    // Download buttons
-    const btnDownloadSdk = document.getElementById('btn-download-sdk');
-    const btnDownloadSdkCard = document.getElementById('btn-download-sdk-card');
-    const btnDownloadSdkStep = document.getElementById('btn-download-sdk-step');
-    const btnDownloadSampleGw = document.getElementById('btn-download-sample-gw');
 
     // Help Panel Content Definitions
     const HELP_CONTENT = {
@@ -149,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (targetBtn) targetBtn.classList.add('active');
         if (targetContent) targetContent.classList.add('active');
 
-        // Hide 4 KPI cards when on Integration tab!
+        // Hide 4 KPI cards when on Integration tab
         if (kpiGrid) {
             if (tabId === 'tab-integration') {
                 kpiGrid.style.display = 'none';
@@ -174,30 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize KPI visibility (Hidden on start since Integration is active)
     if (kpiGrid) kpiGrid.style.display = 'none';
-
-    // Download SDK & Sample Gateway Handlers (API Download + In-Browser Fallback)
-    async function triggerSdkDownload() {
-        try {
-            window.location.href = `${API_BASE}/download/sdk`;
-        } catch (e) {
-            console.error('Download error:', e);
-            alert('Downloading Governance Interceptor SDK package...');
-        }
-    }
-
-    async function triggerSampleGwDownload() {
-        try {
-            window.location.href = `${API_BASE}/download/sample-gateway`;
-        } catch (e) {
-            console.error('Download error:', e);
-            alert('Downloading Sample Gateway package...');
-        }
-    }
-
-    if (btnDownloadSdk) btnDownloadSdk.addEventListener('click', (e) => { e.preventDefault(); triggerSdkDownload(); });
-    if (btnDownloadSdkCard) btnDownloadSdkCard.addEventListener('click', (e) => { e.preventDefault(); triggerSdkDownload(); });
-    if (btnDownloadSdkStep) btnDownloadSdkStep.addEventListener('click', (e) => { e.preventDefault(); triggerSdkDownload(); });
-    if (btnDownloadSampleGw) btnDownloadSampleGw.addEventListener('click', (e) => { e.preventDefault(); triggerSampleGwDownload(); });
 
     // Modal Close handlers
     modalCloseBtn.addEventListener('click', () => eventModal.classList.remove('active'));

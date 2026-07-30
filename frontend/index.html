@@ -25,7 +25,7 @@
                     Integrate the lightweight Governance Interceptor SDK into your LLM Gateway. Every model substitution is automatically recorded, risk assessed, and audited in real time.
                 </div>
                 <div class="product-action-buttons">
-                    <a href="https://model-substitution-governance-event.onrender.com/api/v1/download/sdk" id="btn-download-sdk" class="btn btn-primary">Download SDK (v1.0.0)</a>
+                    <a href="https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-/releases/download/v1.0.0/governance-interceptor-v1.0.0.zip" id="btn-download-sdk" class="btn btn-primary" target="_blank">Download SDK (v1.0.0)</a>
                     <button class="btn btn-secondary" id="btn-goto-integration">Integration Guide</button>
                     <a href="https://model-substitution-governance-event.onrender.com/docs" target="_blank" class="btn btn-secondary">API Documentation</a>
                     <a href="https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-.git" target="_blank" class="btn btn-secondary">GitHub Repository</a>
@@ -33,7 +33,7 @@
                 </div>
             </div>
 
-            <!-- Enterprise System Health Status Bar -->
+            <!-- Enterprise System Health & Version Status Bar -->
             <div class="system-health-bar">
                 <div class="health-item">
                     <span>Backend</span>
@@ -46,8 +46,12 @@
                     <span id="text-db">Connected</span>
                 </div>
                 <div class="health-item">
-                    <span>SDK</span>
+                    <span>SDK Version</span>
                     <span class="font-mono">v1.0.0</span>
+                </div>
+                <div class="health-item">
+                    <span>Source</span>
+                    <span class="font-mono">GitHub Releases</span>
                 </div>
                 <button class="btn btn-secondary text-sm" id="btn-refresh">Refresh Data</button>
                 <button class="btn btn-accent text-sm" id="btn-open-sim">Gateway Simulator</button>
@@ -91,14 +95,29 @@
             </div>
         </section>
 
-        <!-- TAB 1: INTEGRATION (NEW FIRST TAB) -->
+        <!-- TAB 1: INTEGRATION (FIRST TAB) -->
         <section id="tab-integration" class="tab-content active">
             <div class="card">
                 <div class="card-header">
                     <h2>30-Second SDK & Gateway Integration Guide</h2>
-                    <a href="https://model-substitution-governance-event.onrender.com/api/v1/download/sdk" id="btn-download-sdk-card" class="btn btn-primary">Download SDK Package</a>
+                    <a href="https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-/releases/download/v1.0.0/governance-interceptor-v1.0.0.zip" id="btn-download-sdk-card" class="btn btn-primary" target="_blank">Download SDK Package (GitHub Release)</a>
                 </div>
-                <p class="tab-description">Follow these 5 simple steps to install the lightweight interceptor library into your LLM gateway service and automatically send model substitution events to your tracker.</p>
+                <p class="tab-description">Follow these steps to install the lightweight interceptor library into your LLM gateway service and automatically send model substitution events to your tracker.</p>
+
+                <!-- SDK Distribution Info Panel -->
+                <div class="explanation-box margin-bottom" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <strong>SDK Distribution Model:</strong> Distributed via <strong>GitHub Releases (Global CDN)</strong> for instant versioned downloads with zero backend cold-start latency.
+                        </div>
+                        <div>
+                            Latest Version: <span class="font-mono">v1.0.0</span> | Distribution: <span class="font-mono">GitHub Releases</span>
+                        </div>
+                    </div>
+                    <div class="text-sm color-muted margin-top">
+                        <em>The FastAPI backend is reserved exclusively for high-throughput governance APIs (events, risk calculation, compliance audit).</em>
+                    </div>
+                </div>
                 
                 <div class="integration-grid">
                     <!-- Step 1 -->
@@ -109,10 +128,10 @@
                                 <h3>Download SDK</h3>
                             </div>
                             <div class="step-body">
-                                <p>Get the official <code>governance-interceptor</code> Python package containing source code, installation configuration, and examples.</p>
+                                <p>Get the official <code>governance-interceptor-v1.0.0.zip</code> package directly from GitHub Releases CDN.</p>
                             </div>
                         </div>
-                        <a href="https://model-substitution-governance-event.onrender.com/api/v1/download/sdk" id="btn-download-sdk-step" class="btn btn-secondary">Download SDK (.zip)</a>
+                        <a href="https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-/releases/download/v1.0.0/governance-interceptor-v1.0.0.zip" id="btn-download-sdk-step" class="btn btn-secondary" target="_blank">Download SDK (.zip)</a>
                     </div>
 
                     <!-- Step 2 -->
@@ -201,8 +220,8 @@ Call Provider API (OpenAI / Claude / Gemini)</div>
                                 <h3>Try It Live</h3>
                             </div>
                             <div class="step-body">
-                                <p>Download a runnable sample gateway application to test substitutions locally:</p>
-                                <a href="https://model-substitution-governance-event.onrender.com/api/v1/download/sample-gateway" id="btn-download-sample-gw" class="btn btn-secondary text-sm margin-bottom">Download Sample Gateway (.zip)</a>
+                                <p>Download a runnable sample gateway application from GitHub Releases to test substitutions locally:</p>
+                                <a href="https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-/releases/download/v1.0.0/sample-gateway-v1.0.0.zip" id="btn-download-sample-gw" class="btn btn-secondary text-sm margin-bottom" target="_blank">Download Sample Gateway (.zip)</a>
                                 <p class="text-sm color-muted margin-top">Or click below to simulate live gateway traffic directly onto this dashboard:</p>
                             </div>
                         </div>
@@ -406,20 +425,22 @@ Call Provider API (OpenAI / Claude / Gemini)</div>
             </div>
             <div class="modal-body">
                 <div class="arch-flow-box">
-Enterprise AI Application
+Developer
        │
        ▼
-Existing LLM Gateway (LiteLLM / Portkey / Custom)
+GitHub Releases (Global CDN)
+       │
+       ├── Download Governance Interceptor SDK (v1.0.0)
+       ├── Download Sample Gateway (v1.0.0)
+       │
+       ▼
+Install into Enterprise LLM Gateway
        │
        ├── Routing Decision Made (Requested != Actual)
-       │
-       ▼
-Governance Interceptor SDK (pip install governance-interceptor)
-       │
        ├── POST /api/v1/events (Async / Non-blocking)
        │
        ▼
-FastAPI Cloud Tracker Service (Hosted on Render)
+Governance Tracker Cloud APIs (Hosted on Render)
        ├── Ingestion & Validation Router
        ├── Risk Assessor Engine (Context Window Drop Analysis)
        ├── Compliance Flag Engine (Agent Whitelist Policy Match)
@@ -431,18 +452,19 @@ PostgreSQL Relational Storage (Hosted on Supabase)
 Enterprise Governance Dashboard (Hosted on Vercel)
                 </div>
                 <div class="margin-top">
-                    <h4>Component Overview</h4>
+                    <h4>Enterprise Architecture Overview</h4>
                     <p class="text-sm color-muted margin-top">
-                        • <strong>Governance Interceptor SDK</strong>: Lightweight Python package installed directly inside the customer's gateway code.<br>
-                        • <strong>Tracker API (FastAPI)</strong>: High-throughput cloud backend that receives events, performs automated risk assessment, and evaluates compliance.<br>
-                        • <strong>Database (Supabase PostgreSQL)</strong>: Enterprise relational database storing models, agent policies, and full historical substitution audit logs.<br>
-                        • <strong>Web Dashboard (Vercel)</strong>: Real-time monitoring UI displaying event streams, risk alerts, compliance violations, and retroactive audit reports.
+                        • <strong>SDK Distribution</strong>: Distributed via GitHub Releases for instant CDN downloads, versioning, and zero backend cold-start latency.<br>
+                        • <strong>Governance Tracker APIs</strong>: High-throughput FastAPI cloud backend on Render reserved exclusively for governance event ingestion and compliance audits.<br>
+                        • <strong>Database (Supabase PostgreSQL)</strong>: Enterprise relational database storing model specs, agent policies, and immutable substitution logs.<br>
+                        • <strong>Web Dashboard (Vercel)</strong>: Real-time monitoring UI displaying live event streams, capability risk alerts, compliance flags, and retroactive audit reports.
                     </p>
                 </div>
             </div>
         </div>
     </div>
 
+    <script src="config.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

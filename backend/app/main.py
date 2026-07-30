@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 from backend.app.database import engine, Base, get_db
 from backend.app.seed_data import seed_database
-from backend.app.routers import health, events, compliance, models_and_agents, downloads
+from backend.app.routers import health, events, compliance, models_and_agents
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Model Substitution Governance Tracker API",
-    description="Enterprise API for Monitoring, Recording, Risk Assessing, and Auditing LLM Gateway Model Substitutions",
+    description="Enterprise Governance APIs for Monitoring, Recording, Risk Assessing, and Auditing LLM Gateway Model Substitutions",
     version="1.0.0",
     lifespan=lifespan,
     docs_url="/docs",
@@ -47,7 +47,6 @@ app.include_router(health.router, prefix=API_PREFIX)
 app.include_router(events.router, prefix=API_PREFIX)
 app.include_router(compliance.router, prefix=API_PREFIX)
 app.include_router(models_and_agents.router, prefix=API_PREFIX)
-app.include_router(downloads.router, prefix=API_PREFIX)
 
 # Mount frontend static directory if exists
 frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend")
