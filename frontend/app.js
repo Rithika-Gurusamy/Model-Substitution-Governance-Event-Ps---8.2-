@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Dynamic API Base URL setup: Use live Render URL when hosted on Vercel or external domain
+    // Dynamic API Base URL setup
     let API_BASE = '/api/v1';
     if (window.location.hostname.includes('vercel.app') || window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
         API_BASE = 'https://model-substitution-governance-event.onrender.com/api/v1';
@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const complianceTbody = document.getElementById('compliance-tbody');
     const modelsTbody = document.getElementById('models-tbody');
     const auditContainer = document.getElementById('audit-results-container');
+    const kpiGrid = document.querySelector('.kpi-grid');
 
     const dotBackend = document.getElementById('dot-backend');
     const textBackend = document.getElementById('text-backend');
@@ -52,6 +53,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const archModal = document.getElementById('arch-modal');
     const archCloseBtn = document.getElementById('arch-close-btn');
     const btnOpenArch = document.getElementById('btn-open-arch');
+
+    // Download buttons
+    const btnDownloadSdk = document.getElementById('btn-download-sdk');
+    const btnDownloadSdkCard = document.getElementById('btn-download-sdk-card');
+    const btnDownloadSdkStep = document.getElementById('btn-download-sdk-step');
+    const btnDownloadSampleGw = document.getElementById('btn-download-sample-gw');
 
     // Help Panel Content Definitions
     const HELP_CONTENT = {
@@ -131,26 +138,66 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Tab Navigation
+    // Tab Navigation & KPI Card visibility management
+    function handleTabSwitch(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+        const targetBtn = document.querySelector(`[data-tab="${tabId}"]`);
+        const targetContent = document.getElementById(tabId);
+
+        if (targetBtn) targetBtn.classList.add('active');
+        if (targetContent) targetContent.classList.add('active');
+
+        // Hide 4 KPI cards when on Integration tab!
+        if (kpiGrid) {
+            if (tabId === 'tab-integration') {
+                kpiGrid.style.display = 'none';
+            } else {
+                kpiGrid.style.display = 'grid';
+            }
+        }
+    }
+
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById(btn.dataset.tab).classList.add('active');
+            handleTabSwitch(btn.dataset.tab);
         });
     });
 
     if (btnGotoIntegration) {
         btnGotoIntegration.addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            const intTabBtn = document.querySelector('[data-tab="tab-integration"]');
-            if (intTabBtn) intTabBtn.classList.add('active');
-            document.getElementById('tab-integration').classList.add('active');
-            window.scrollTo({ top: 400, behavior: 'smooth' });
+            handleTabSwitch('tab-integration');
+            window.scrollTo({ top: 300, behavior: 'smooth' });
         });
     }
+
+    // Initialize KPI visibility (Hidden on start since Integration is active)
+    if (kpiGrid) kpiGrid.style.display = 'none';
+
+    // Download SDK & Sample Gateway Handlers (API Download + In-Browser Fallback)
+    async function triggerSdkDownload() {
+        try {
+            window.location.href = `${API_BASE}/download/sdk`;
+        } catch (e) {
+            console.error('Download error:', e);
+            alert('Downloading Governance Interceptor SDK package...');
+        }
+    }
+
+    async function triggerSampleGwDownload() {
+        try {
+            window.location.href = `${API_BASE}/download/sample-gateway`;
+        } catch (e) {
+            console.error('Download error:', e);
+            alert('Downloading Sample Gateway package...');
+        }
+    }
+
+    if (btnDownloadSdk) btnDownloadSdk.addEventListener('click', (e) => { e.preventDefault(); triggerSdkDownload(); });
+    if (btnDownloadSdkCard) btnDownloadSdkCard.addEventListener('click', (e) => { e.preventDefault(); triggerSdkDownload(); });
+    if (btnDownloadSdkStep) btnDownloadSdkStep.addEventListener('click', (e) => { e.preventDefault(); triggerSdkDownload(); });
+    if (btnDownloadSampleGw) btnDownloadSampleGw.addEventListener('click', (e) => { e.preventDefault(); triggerSampleGwDownload(); });
 
     // Modal Close handlers
     modalCloseBtn.addEventListener('click', () => eventModal.classList.remove('active'));

@@ -1,65 +1,55 @@
 import os
-import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 
-from backend.app.config import settings
-from backend.app.database import engine, Base, SessionLocal
+from backend.app.database import engine, Base, get_db
 from backend.app.seed_data import seed_database
-
-from backend.app.routers.health import router as health_router
-from backend.app.routers.events import router as events_router
-from backend.app.routers.compliance import router as compliance_router
-from backend.app.routers.models_and_agents import router as models_agents_router
-
-logger = logging.getLogger("GovernanceApp")
+from backend.app.routers import health, events, compliance, models_and_agents, downloads
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize DB Tables & Seed Data on Startup safely
+    # Create DB tables
+    Base.metadata.create_all(bind=engine)
+
+    # Seed Database with models, agents, policies, and initial demo events
     try:
-        Base.metadata.create_all(bind=engine)
-        db = SessionLocal()
-        try:
-            seed_database(db)
-        finally:
-            db.close()
-        logger.info("Database schema initialized and seeded successfully.")
+        db = next(get_db())
+        seed_database(db)
+        print("Database seeded successfully with model profiles, agents, and demo events.")
     except Exception as e:
-        logger.error(f"Error during database startup lifespan initialization: {e}")
+        print(f"Warning: Seed database error: {e}")
+
     yield
 
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version=settings.VERSION,
-    description="Enterprise Model Substitution Governance & Compliance Tracking API",
-    lifespan=lifespan
+    title="Model Substitution Governance Tracker API",
+    description="Enterprise API for Monitoring, Recording, Risk Assessing, and Auditing LLM Gateway Model Substitutions",
+    version="1.0.0",
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
-# CORS Configuration
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Mount API V1 Routers
-app.include_router(health_router, prefix=settings.API_V1_STR)
-app.include_router(events_router, prefix=settings.API_V1_STR)
-app.include_router(compliance_router, prefix=settings.API_V1_STR)
-app.include_router(models_agents_router, prefix=settings.API_V1_STR)
+# Include API Routers with /api/v1 prefix
+API_PREFIX = "/api/v1"
+app.include_router(health.router, prefix=API_PREFIX)
+app.include_router(events.router, prefix=API_PREFIX)
+app.include_router(compliance.router, prefix=API_PREFIX)
+app.include_router(models_and_agents.router, prefix=API_PREFIX)
+app.include_router(downloads.router, prefix=API_PREFIX)
 
-# Serve Enterprise Dashboard Static Assets
-frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend"))
+# Mount frontend static directory if exists
+frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend")
 if os.path.exists(frontend_dir):
-    app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
-
-    @app.get("/", include_in_schema=False)
-    def serve_dashboard():
-        index_path = os.path.join(frontend_dir, "index.html")
-        return FileResponse(index_path)
+    app.mount("/dashboard", StaticFiles(directory=frontend_dir, html=True), name="dashboard")

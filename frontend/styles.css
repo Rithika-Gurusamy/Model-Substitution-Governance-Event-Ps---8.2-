@@ -9,21 +9,17 @@
     
     --primary: #0f172a;
     --primary-hover: #1e293b;
-    --primary-light: #f1f5f9;
 
     --text-main: #0f172a;
     --text-muted: #64748b;
-    --text-dark: #94a3b8;
 
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
 
     --radius-sm: 6px;
     --radius-md: 10px;
-    --radius-lg: 14px;
-    
+
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
 }
 
 * {
@@ -40,24 +36,23 @@ body {
     line-height: 1.5;
 }
 
-/* Product Hero Header */
+/* Product Hero Header - Clean Neat Layout */
 .product-header {
     background: #ffffff;
     border-bottom: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
-    padding: 2rem 2.5rem 1.5rem 2.5rem;
+    padding: 1.75rem 2.5rem 1.25rem 2.5rem;
 }
 
 .product-header-top {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 1.5rem;
+    gap: 2rem;
 }
 
 .product-branding {
-    max-width: 850px;
+    flex: 1;
 }
 
 .product-brand-title {
@@ -78,49 +73,51 @@ body {
 }
 
 .product-brand-title h1 {
-    font-size: 1.6rem;
+    font-size: 1.5rem;
     font-weight: 800;
     color: #0f172a;
     letter-spacing: -0.02em;
 }
 
 .product-subtitle {
-    font-size: 1.05rem;
+    font-size: 1rem;
     font-weight: 600;
     color: #334155;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
 }
 
 .product-onboarding-text {
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     color: var(--text-muted);
-    line-height: 1.5;
+    line-height: 1.45;
+    max-width: 900px;
 }
 
 .product-action-buttons {
     display: flex;
+    align-items: center;
     flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-top: 1.25rem;
+    gap: 0.65rem;
+    margin-top: 1rem;
 }
 
 /* System Health Status Bar */
 .system-health-bar {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 1.25rem;
+    gap: 1rem;
     background: #f8fafc;
     border: 1px solid var(--border-color);
-    padding: 0.6rem 1.2rem;
-    border-radius: 25px;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
     font-size: 0.825rem;
+    white-space: nowrap;
 }
 
 .health-item {
     display: flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.4rem;
     color: var(--text-muted);
     font-weight: 600;
 }
@@ -137,10 +134,10 @@ body {
 
 /* Buttons */
 .btn {
-    padding: 0.6rem 1.2rem;
+    padding: 0.55rem 1.1rem;
     border-radius: var(--radius-sm);
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     cursor: pointer;
     border: none;
     transition: all 0.15s ease;
@@ -148,6 +145,7 @@ body {
     align-items: center;
     gap: 0.5rem;
     text-decoration: none;
+    line-height: 1.2;
 }
 
 .btn-primary {
@@ -186,7 +184,7 @@ body {
 /* Layout Container */
 .app-container {
     max-width: 1400px;
-    margin: 2rem auto;
+    margin: 1.75rem auto;
     padding: 0 1.5rem;
 }
 
@@ -229,7 +227,7 @@ body {
     display: block;
 }
 
-/* KPI Summary Cards */
+/* KPI Summary Cards (Hidden on Integration tab) */
 .kpi-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -383,7 +381,6 @@ body {
     border: 1px solid #1e293b;
 }
 
-/* Architecture Diagram Block */
 .arch-flow-box {
     background: #f8fafc;
     border: 1px solid var(--border-color);
