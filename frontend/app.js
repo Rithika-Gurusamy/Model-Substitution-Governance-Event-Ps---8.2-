@@ -1,5 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const API_BASE = '/api/v1';
+    // Dynamic API Base URL setup: Use live Render URL when hosted on Vercel or external domain
+    let API_BASE = '/api/v1';
+    if (window.location.hostname.includes('vercel.app') || window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        API_BASE = 'https://model-substitution-governance-event.onrender.com/api/v1';
+    }
 
     // State Variables
     let eventsData = [];
@@ -11,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modelsTbody = document.getElementById('models-tbody');
     const agentsTbody = document.getElementById('agents-tbody');
     const auditContainer = document.getElementById('audit-results-container');
+    const apiStatus = document.getElementById('api-status');
 
     const kpiTotal = document.getElementById('kpi-total');
     const kpiHighRisk = document.getElementById('kpi-high-risk');
@@ -52,11 +57,12 @@ document.addEventListener('DOMContentLoaded', () => {
     btnOpenSim.addEventListener('click', async () => {
         btnOpenSim.innerText = '⚡ Simulating...';
         try {
-            // Trigger sample substitutions via synthetic calls for testing
+            // Trigger sample substitutions via API calls
             const testPayloads = [
-                { requested_model: "GPT-4", actual_model: "GPT-4o Mini", reason: "cost", agent_id: "HR-Agent", session_id: "sim-" + Math.floor(Math.random() * 10000) },
+                { requested_model: "GPT-5", actual_model: "GPT-4o Mini", reason: "cost", agent_id: "HR-Agent", session_id: "sim-" + Math.floor(Math.random() * 10000) },
                 { requested_model: "Claude Opus 4", actual_model: "Gemini 1.5 Flash", reason: "availability", agent_id: "Finance-Bot", session_id: "sim-" + Math.floor(Math.random() * 10000) },
-                { requested_model: "GPT-5", actual_model: "GPT-3.5 Turbo", reason: "cost", agent_id: "HR-Agent", session_id: "sim-" + Math.floor(Math.random() * 10000) }
+                { requested_model: "GPT-5", actual_model: "GPT-3.5 Turbo", reason: "cost", agent_id: "HR-Agent", session_id: "sim-" + Math.floor(Math.random() * 10000) },
+                { requested_model: "Claude Opus 4", actual_model: "Gemini 1.5 Pro", reason: "availability", agent_id: "Finance-Bot", session_id: "sim-" + Math.floor(Math.random() * 10000) }
             ];
 
             for (const p of testPayloads) {
@@ -107,9 +113,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch(`${API_BASE}/events?limit=200`);
             if (res.ok) {
                 eventsData = await res.json();
+                if (apiStatus) apiStatus.innerHTML = '<span class="status-dot green"></span> Live API Connected';
+            } else {
+                if (apiStatus) apiStatus.innerHTML = '<span class="status-dot red"></span> API Disconnected';
             }
         } catch (err) {
             console.error('Error fetching events:', err);
+            if (apiStatus) apiStatus.innerHTML = '<span class="status-dot red"></span> API Offline';
         }
     }
 
@@ -171,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (filtered.length === 0) {
-            eventsTbody.innerHTML = `<tr><td colspan="8" class="text-center">No governance events match the selected filters.</td></tr>`;
+            eventsTbody.innerHTML = `<tr><td colspan="8" class="text-center">No governance events match the selected filters. Click "⚡ Gateway Simulator" to generate sample live events.</td></tr>`;
             return;
         }
 
