@@ -14,11 +14,15 @@ async def lifespan(app: FastAPI):
     # 1. Create DB tables via SQLAlchemy Metadata
     Base.metadata.create_all(bind=engine)
 
-    # 2. Additive DDL Schema Migration: Ensure user_profile_id columns & api_keys table exist
+    # 2. Additive DDL Schema Migration
     try:
         with engine.connect() as conn:
+            # Fix: make organization_id nullable in user_profiles (old schema had NOT NULL)
+            conn.execute(text("ALTER TABLE user_profiles ALTER COLUMN organization_id DROP NOT NULL;"))
+            # Add user_profile_id column to agents and governance_events
             conn.execute(text("ALTER TABLE agents ADD COLUMN IF NOT EXISTS user_profile_id VARCHAR;"))
             conn.execute(text("ALTER TABLE governance_events ADD COLUMN IF NOT EXISTS user_profile_id VARCHAR;"))
+            # Create api_keys table if not exists
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS api_keys (
                     id VARCHAR PRIMARY KEY,
