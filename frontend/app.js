@@ -499,9 +499,14 @@ function formatUTCTimestamp(tsStr) {
     return new Date(formatted).toLocaleString();
 }
 
-    tbody.innerHTML = filtered.map(e => `
-        <tr>
-            <td class="font-mono text-sm">${formatUTCTimestamp(e.timestamp)}</td>
+    tbody.innerHTML = filtered.map((e, idx) => {
+        const isHighlighted = (idx === 0 && window.highlightNewestSimRow);
+        const rowClass = isHighlighted ? 'class="new-event-highlight"' : '';
+        const handPointer = isHighlighted ? '<span class="demo-hand-pointer">👉 NEW LIVE EVENT RECORDED!</span>' : '';
+
+        return `
+        <tr ${rowClass}>
+            <td class="font-mono text-sm">${formatUTCTimestamp(e.timestamp)} ${handPointer}</td>
             <td><strong>${e.agent_id}</strong></td>
             <td><span class="model-tag requested">${e.requested_model}</span></td>
             <td><span class="model-tag actual">${e.actual_model}</span></td>
@@ -516,7 +521,8 @@ function formatUTCTimestamp(tsStr) {
                 <button class="btn btn-secondary text-sm" onclick="inspectEvent('${e.id}')">Inspect</button>
             </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 }
 
 // Render Risk Assessor Table
@@ -949,7 +955,25 @@ function initSimulator() {
 
     document.getElementById('sim-modal-btn-view-event')?.addEventListener('click', () => {
         closeSimModal();
-        document.querySelector('.tab-btn[data-tab="tab-events"]')?.click();
+        
+        // Enable 15-second highlight for top recorded row
+        window.highlightNewestSimRow = true;
+        
+        // Switch to Governance Event Recorder tab (data-tab="tab-recorder")
+        const recorderTabBtn = document.querySelector('.tab-btn[data-tab="tab-recorder"]');
+        if (recorderTabBtn) {
+            recorderTabBtn.click();
+        }
+
+        // Re-render table with glowing pulse & hand pointer
+        renderEventsTable();
+
+        // Auto-remove highlight after 15 seconds
+        if (window.simHighlightTimeout) clearTimeout(window.simHighlightTimeout);
+        window.simHighlightTimeout = setTimeout(() => {
+            window.highlightNewestSimRow = false;
+            renderEventsTable();
+        }, 15000);
     });
 
     document.getElementById('btn-open-sim')?.addEventListener('click', runSim);
