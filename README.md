@@ -1,19 +1,19 @@
-# Model Substitution Governance & Audit Platform
+# MODEL SUBSTITUTION GOVERNANCE & AUDIT PLATFORM
 
-> **Real-Time Monitoring, Capability Risk Assessment, and Compliance Auditing for Dynamic LLM Gateway Model Routing.**
-
----
-
-## 🌐 Live Production Links
-
-* 🖥️ **Live Web Dashboard**: [model-substitution-governance-event.vercel.app](https://model-substitution-governance-event.vercel.app)
-* ⚙️ **Cloud API Engine**: [model-substitution-governance-event.onrender.com](https://model-substitution-governance-event.onrender.com)
-* 📖 **OpenAPI / Swagger Specs**: [model-substitution-governance-event.onrender.com/docs](https://model-substitution-governance-event.onrender.com/docs)
-* 📦 **SDK GitHub Release**: [v1.0.0 Release Package](https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-/releases/download/v1.0.0/governance-interceptor-v1.0.0.zip)
+**Real-Time Monitoring, Capability Risk Assessment, and Compliance Auditing for Dynamic LLM Gateway Model Routing**
 
 ---
 
-## 📌 Executive Summary
+## LIVE PRODUCTION LINKS
+
+* **Live Web Dashboard**: [model-substitution-governance-event.vercel.app](https://model-substitution-governance-event.vercel.app)
+* **Cloud API Engine**: [model-substitution-governance-event.onrender.com](https://model-substitution-governance-event.onrender.com)
+* **OpenAPI / Swagger Specs**: [model-substitution-governance-event.onrender.com/docs](https://model-substitution-governance-event.onrender.com/docs)
+* **SDK GitHub Release**: [v1.0.0 Release Package](https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-/releases/download/v1.0.0/governance-interceptor-v1.0.0.zip)
+
+---
+
+## EXECUTIVE SUMMARY
 
 Modern AI applications use **LLM Gateways** (such as LiteLLM, Portkey, or custom routing services) to dynamically route prompt requests based on cost, latency, or rate limits. When a high-capability model (e.g., `GPT-4o` or `Claude 3.5 Sonnet`) is swapped for a smaller model (e.g., `Gemini 1.5 Flash` or `GPT-4o Mini`), **silent model substitutions** occur.
 
@@ -26,35 +26,35 @@ This platform provides a complete governance solution: a **Zero-Latency Intercep
 
 ---
 
-## ✨ Key Features & Capabilities
+## KEY FEATURES & CAPABILITIES
 
-* **⚡ Zero-Latency Interceptor SDK (`governance_interceptor`)**:
+* **ZERO-LATENCY INTERCEPTOR SDK (`governance_interceptor`)**:
   - Intercepts gateway routing decisions in memory.
   - Automatically compares `requested_model` vs. `actual_model`.
   - Sends non-blocking background HTTP requests to the cloud tracker without slowing down LLM response streaming.
 
-* **⚖️ Capability Risk Assessor Engine**:
+* **CAPABILITY RISK ASSESSOR ENGINE**:
   - Evaluates original vs. substituted model capability profiles (Context Window size, Max Output Tokens, Provider tier).
   - Automatically calculates context downgrade % and assigns risk severity ratings (**LOW**, **MEDIUM**, **HIGH**, **CRITICAL**).
 
-* **🚨 Agent Compliance & Whitelist Engine**:
+* **AGENT COMPLIANCE & WHITELIST ENGINE**:
   - Enforces strict per-agent model whitelists.
   - Instantly flags unauthorized model substitutions (e.g., if a `Finance-Agent` is restricted to OpenAI but routed to an external provider).
 
-* **📜 Retroactive Compliance Audit Engine**:
+* **RETROACTIVE COMPLIANCE AUDIT ENGINE**:
   - Performs batch compliance audits across historical log data.
   - Computes organizational flag rates, high-risk exposure percentages, and unapproved request metrics.
 
-* **🔒 Multi-Tenant Data Isolation & API Security**:
+* **MULTI-TENANT DATA ISOLATION & API SECURITY**:
   - Secure account isolation using **Supabase JWT authentication** and **Hashed Developer API Keys** (`usr_live_...`).
   - Automatic database-level scoping ensuring users only access their own organization's logs and agents.
 
-* **🎮 Interactive Live Simulator ("Try Demo")**:
-  - Built-in live traffic simulator allowing prospective users and evaluators to trigger simulated gateway model substitutions with 1-click visual feedback and hand-pointer guidance (`👉`).
+* **INTERACTIVE LIVE SIMULATOR ("TRY DEMO")**:
+  - Built-in live traffic simulator allowing prospective users and evaluators to trigger simulated gateway model substitutions with 1-click visual feedback and guided walkthrough prompts.
 
 ---
 
-## 🔄 System Architecture & Workflow
+## SYSTEM ARCHITECTURE & WORKFLOW
 
 ```text
 +-----------------------------------------------------------------------------------+
@@ -99,7 +99,7 @@ This platform provides a complete governance solution: a **Zero-Latency Intercep
 
 ---
 
-## 🚀 Quick Start & Local Setup
+## QUICK START & LOCAL SETUP
 
 ### Prerequisites
 * **Python 3.10+**
@@ -151,7 +151,7 @@ Navigate to `http://localhost:3000`.
 
 ---
 
-## 📁 Repository & Project Structure
+## REPOSITORY & PROJECT STRUCTURE
 
 Below is a guide to the project layout:
 
@@ -195,7 +195,7 @@ Model-Substitution-Governance-Event/
 
 ---
 
-## 💻 Interceptor SDK Integration
+## INTERCEPTOR SDK INTEGRATION
 
 Connecting your AI application or LLM Gateway to the Governance Tracker requires only **3 lines of code**:
 
@@ -227,5 +227,5 @@ interceptor.intercept(
 
 ---
 
-## 📄 License
+## LICENSE
 Distributed under the **MIT License**. See `LICENSE` for details.
