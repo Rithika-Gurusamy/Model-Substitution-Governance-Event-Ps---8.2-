@@ -148,44 +148,39 @@
             <!-- TAB 1: INTEGRATION -->
             <section id="tab-integration" class="tab-content active">
                 
-                <!-- QUICK START BANNER -->
-                <div style="background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border: 1.5px solid #60a5fa; border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                    <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
-                        <div>
-                            <h3 style="margin: 0 0 0.5rem 0; color: #1e3a8a; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
-                                🚀 Quick Start — How to Connect Your Application & View Live Events
-                            </h3>
-                            <ol style="margin: 0; padding-left: 1.25rem; color: #334155; font-size: 0.925rem; line-height: 1.7;">
-                                <li>Copy your <strong>Developer API Key</strong> below (or click <strong>Regenerate Key</strong> to generate a fresh secret).</li>
-                                <li>Paste <code>API_KEY="usr_live_..."</code> into your application's <code>.env</code> file.</li>
-                                <li>Run your application and scan a document or send an LLM request → then click <strong>Refresh</strong> on the <strong>Governance Event Recorder</strong> tab to watch your live events appear!</li>
-                            </ol>
-                        </div>
-                        <button class="btn btn-primary" id="btn-open-dev-guide" style="white-space: nowrap; margin-top: 0.25rem; font-weight: 600;">
-                            📖 Detailed Developer Guide
-                        </button>
-                    </div>
-                </div>
-
                 <!-- DEVELOPER API KEY CARD -->
                 <div class="card" style="margin-bottom: 1.5rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
                         <div>
-                            <h3 style="margin: 0; font-size: 1.1rem; color: #0f172a; display: flex; align-items: center; gap: 0.5rem;">
-                                🔑 Developer API Key
+                            <h3 style="margin: 0; font-size: 1.15rem; color: #0f172a; font-weight: 700;">
+                                Developer API Key
                             </h3>
                             <p style="margin: 0.25rem 0 0 0; color: #64748b; font-size: 0.875rem;">
                                 Use this API Key in your SDK configuration (<code>API_KEY</code>) to securely isolate and record governance events in your account.
                             </p>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <div id="api-key-display-box" class="code-box" style="margin: 0; padding: 0.5rem 0.85rem; font-family: monospace; font-size: 0.875rem; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; min-width: 260px;">
-                                <span id="api-key-text">usr_live_••••••••••••••••</span>
+                            <div id="api-key-display-box" style="margin: 0; padding: 0.55rem 0.95rem; font-family: var(--font-mono); font-size: 0.875rem; color: #0f172a; background: #f1f5f9; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 700; min-width: 280px; text-align: center;">
+                                <span id="api-key-text" style="color: #0f172a; font-weight: 700;">usr_live_••••••••••••••••</span>
                             </div>
                             <button class="btn btn-secondary text-sm" id="btn-copy-api-key">Copy Key</button>
                             <button class="btn btn-secondary text-sm" id="btn-regen-api-key">Regenerate Key</button>
                         </div>
                     </div>
+
+                    <!-- STEP-BY-STEP INSTRUCTION BOX INSIDE API KEY CARD -->
+                    <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 1rem 1.15rem;">
+                        <h4 style="margin: 0 0 0.4rem 0; color: #0f172a; font-size: 0.925rem; font-weight: 700; display: flex; align-items: center; justify-content: space-between;">
+                            <span>How to Connect Your AI Application:</span>
+                            <button class="btn btn-secondary text-sm" id="btn-open-dev-guide-inline" style="padding: 0.25rem 0.65rem; font-size: 0.775rem;">📖 Detailed Instructions</button>
+                        </h4>
+                        <ol style="margin: 0; padding-left: 1.2rem; color: #334155; font-size: 0.85rem; line-height: 1.65;">
+                            <li>Copy your <strong>Developer API Key</strong> above (or click <strong>Regenerate Key</strong> to generate a fresh secret key).</li>
+                            <li>Paste <code>API_KEY="usr_live_..."</code> into your AI application's <code>.env</code> file.</li>
+                            <li>Run your AI application and process requests → then visit the <strong>Governance Event Recorder</strong> tab (or click <strong>Refresh</strong>) to watch live events populate!</li>
+                        </ol>
+                    </div>
+
                     <div id="api-key-new-alert" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; color: #166534; font-size: 0.875rem;">
                         <strong>New API Key Active:</strong> <code id="api-key-full-secret" style="font-weight: 700; background: #dcfce7; padding: 0.2rem 0.4rem; border-radius: 4px;"></code> — Copied to clipboard!
                     </div>
@@ -196,7 +191,7 @@
                         <h2>SDK & Gateway Integration Guide</h2>
                         <a href="https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-/releases/download/v1.0.0/governance-interceptor-v1.0.0.zip" id="btn-download-sdk-card" class="btn btn-primary" target="_blank">Download SDK Package (GitHub Release)</a>
                     </div>
-                    <p class="tab-description">Clear, step-by-step developer guide to connect any LLM Gateway to the Governance Tracker in under 2 minutes.</p>
+                    <p class="tab-description">Clear step-by-step developer guide to connect any LLM Gateway to the Governance Tracker in under 2 minutes.</p>
 
                     <div class="integration-grid">
                         <!-- Step 1 -->
@@ -205,9 +200,10 @@
                                 <div class="step-header">
                                     <span class="step-badge">Step 1</span>
                                     <h3>Download SDK</h3>
+                                    <button class="help-btn text-sm step-help-btn" style="margin-left: auto;">ⓘ Info</button>
                                 </div>
                                 <div class="step-body">
-                                    <p>Get the official <code>governance-interceptor-v1.0.0.zip</code> package directly from GitHub Releases CDN.</p>
+                                    <p>First, download the official <code>governance-interceptor-v1.0.0.zip</code> package directly from GitHub Releases CDN.</p>
                                 </div>
                             </div>
                             <a href="https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-/releases/download/v1.0.0/governance-interceptor-v1.0.0.zip" id="btn-download-sdk-step" class="btn btn-secondary" target="_blank">Download SDK (.zip)</a>
@@ -219,9 +215,10 @@
                                 <div class="step-header">
                                     <span class="step-badge">Step 2</span>
                                     <h3>Installation</h3>
+                                    <button class="help-btn text-sm step-help-btn" style="margin-left: auto;">ⓘ Info</button>
                                 </div>
                                 <div class="step-body">
-                                    <p>Install the interceptor directly into your gateway virtual environment via pip:</p>
+                                    <p>Second, install the interceptor directly into your AI application's Python environment via pip:</p>
                                     <div class="code-box">pip install governance-interceptor</div>
                                     <p class="text-sm color-muted">Or install from local zip package:</p>
                                     <div class="code-box">pip install governance-interceptor-v1.0.0.zip</div>
@@ -235,9 +232,10 @@
                                 <div class="step-header">
                                     <span class="step-badge">Step 3</span>
                                     <h3>Configuration</h3>
+                                    <button class="help-btn text-sm step-help-btn" style="margin-left: auto;">ⓘ Info</button>
                                 </div>
                                 <div class="step-body">
-                                    <p>Set your Tracker endpoint URL and API key environment variables:</p>
+                                    <p>Third, set your Tracker endpoint URL and API key environment variables in your AI application's <code>.env</code> file:</p>
                                     <div class="code-box" id="step3-config-box">TRACKER_URL="https://model-substitution-governance-event.onrender.com"
 API_KEY="usr_live_your_api_key_here"</div>
                                 </div>
@@ -250,19 +248,20 @@ API_KEY="usr_live_your_api_key_here"</div>
                                 <div class="step-header">
                                     <span class="step-badge">Step 4</span>
                                     <h3>Import & Intercept</h3>
+                                    <button class="help-btn text-sm step-help-btn" style="margin-left: auto;">ⓘ Info</button>
                                 </div>
                                 <div class="step-body">
-                                    <p>Attach the interceptor right after your gateway selects the target model:</p>
+                                    <p>Fourth, attach the interceptor right after your AI application's gateway selects the target model:</p>
                                     <div class="code-box">from governance_interceptor import GovernanceInterceptor
 
-interceptor = GovernanceInterceptor(tracker_url=TRACKER_URL)
+interceptor = GovernanceInterceptor()
 
-# After routing decision:
+# When a model substitution occurs:
 interceptor.intercept(
-    requested_model="GPT-5",
-    actual_model="GPT-4o Mini",
+    requested_model="GPT-4o",
+    actual_model="Gemini 1.5 Flash",
     reason="cost",
-    agent_id="HR-Agent",
+    agent_id="AI-Assistant-Agent",
     session_id="session-102"
 )</div>
                                 </div>
@@ -275,9 +274,10 @@ interceptor.intercept(
                                 <div class="step-header">
                                     <span class="step-badge">Step 5</span>
                                     <h3>Gateway Routing Architecture Flow</h3>
+                                    <button class="help-btn text-sm step-help-btn" style="margin-left: auto;">ⓘ Info</button>
                                 </div>
                                 <div class="step-body">
-                                    <p>Lifecycle flow of requests between your gateway and the Governance Tracker:</p>
+                                    <p>Fifth, understand the lifecycle request flow between your AI application and the Governance Tracker:</p>
                                     <div class="code-box" style="font-size: 0.825rem; line-height: 1.55;">Client Application Request (e.g. Requested Model = "GPT-4")
        │
        ▼
@@ -301,10 +301,11 @@ Provider LLM API (OpenAI / Anthropic / Google Gemini)</div>
                             <div>
                                 <div class="step-header">
                                     <span class="step-badge">Step 6</span>
-                                    <h3>Try It Live</h3>
+                                    <h3>Try It Live & Verify</h3>
+                                    <button class="help-btn text-sm step-help-btn" style="margin-left: auto;">ⓘ Info</button>
                                 </div>
                                 <div class="step-body">
-                                    <p>Download a runnable sample gateway application from GitHub Releases to test substitutions locally:</p>
+                                    <p>Finally, run your AI application, process requests, and click Refresh on the Governance Event Recorder tab to verify live events!</p>
                                     <a href="https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-/releases/download/v1.0.0/sample-gateway-v1.0.0.zip" id="btn-download-sample-gw" class="btn btn-secondary text-sm margin-bottom" target="_blank">Download Sample Gateway (.zip)</a>
                                     <p class="text-sm color-muted margin-top">Or click below to simulate live gateway traffic directly onto this dashboard:</p>
                                 </div>

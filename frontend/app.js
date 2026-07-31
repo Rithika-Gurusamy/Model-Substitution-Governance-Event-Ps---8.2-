@@ -732,8 +732,17 @@ function initModalListeners() {
     document.getElementById('btn-open-dev-guide')?.addEventListener('click', () => {
         document.getElementById('dev-guide-modal').classList.add('active');
     });
+    document.getElementById('btn-open-dev-guide-inline')?.addEventListener('click', () => {
+        document.getElementById('dev-guide-modal').classList.add('active');
+    });
     document.getElementById('dev-guide-close-btn')?.addEventListener('click', () => {
         document.getElementById('dev-guide-modal').classList.remove('active');
+    });
+
+    document.querySelectorAll('.step-help-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.getElementById('dev-guide-modal').classList.add('active');
+        });
     });
 
     document.querySelectorAll('.help-btn').forEach(btn => {
