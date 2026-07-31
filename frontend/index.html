@@ -148,6 +148,25 @@
             <!-- TAB 1: INTEGRATION -->
             <section id="tab-integration" class="tab-content active">
                 
+                <!-- QUICK START BANNER -->
+                <div style="background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border: 1.5px solid #60a5fa; border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h3 style="margin: 0 0 0.5rem 0; color: #1e3a8a; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+                                🚀 Quick Start — How to Connect Your Application & View Live Events
+                            </h3>
+                            <ol style="margin: 0; padding-left: 1.25rem; color: #334155; font-size: 0.925rem; line-height: 1.7;">
+                                <li>Copy your <strong>Developer API Key</strong> below (or click <strong>Regenerate Key</strong> to generate a fresh secret).</li>
+                                <li>Paste <code>API_KEY="usr_live_..."</code> into your application's <code>.env</code> file.</li>
+                                <li>Run your application and scan a document or send an LLM request → then click <strong>Refresh</strong> on the <strong>Governance Event Recorder</strong> tab to watch your live events appear!</li>
+                            </ol>
+                        </div>
+                        <button class="btn btn-primary" id="btn-open-dev-guide" style="white-space: nowrap; margin-top: 0.25rem; font-weight: 600;">
+                            📖 Detailed Developer Guide
+                        </button>
+                    </div>
+                </div>
+
                 <!-- DEVELOPER API KEY CARD -->
                 <div class="card" style="margin-bottom: 1.5rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
@@ -177,7 +196,7 @@
                         <h2>SDK & Gateway Integration Guide</h2>
                         <a href="https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-/releases/download/v1.0.0/governance-interceptor-v1.0.0.zip" id="btn-download-sdk-card" class="btn btn-primary" target="_blank">Download SDK Package (GitHub Release)</a>
                     </div>
-                    <p class="tab-description">Follow these steps to install the lightweight interceptor library into your LLM gateway service and automatically send model substitution events to your tracker.</p>
+                    <p class="tab-description">Clear, step-by-step developer guide to connect any LLM Gateway to the Governance Tracker in under 2 minutes.</p>
 
                     <div class="integration-grid">
                         <!-- Step 1 -->
@@ -255,19 +274,24 @@ interceptor.intercept(
                             <div>
                                 <div class="step-header">
                                     <span class="step-badge">Step 5</span>
-                                    <h3>Gateway Routing Flow</h3>
+                                    <h3>Gateway Routing Architecture Flow</h3>
                                 </div>
                                 <div class="step-body">
-                                    <p>Execution lifecycle between your gateway and the Cloud Tracker:</p>
-                                    <div class="code-box">Client Request
-      ↓
-Requested Model = GPT-5
-      ↓
-Routing Engine → Actual Model = GPT-4o Mini
-      ↓
-Governance Interceptor (POST /api/v1/events)
-      ↓
-Call Provider API (OpenAI / Claude / Gemini)</div>
+                                    <p>Lifecycle flow of requests between your gateway and the Governance Tracker:</p>
+                                    <div class="code-box" style="font-size: 0.825rem; line-height: 1.55;">Client Application Request (e.g. Requested Model = "GPT-4")
+       │
+       ▼
+LLM Gateway Routing Engine (Cost / Availability / Policy Rules)
+       ├── Selects Actual Model (e.g. "Gemini 1.5 Flash")
+       │
+       ▼
+Governance Interceptor SDK (POST /api/v1/events with X-API-Key)
+       │
+       ▼
+Governance Tracker & Dashboard (Recorded under your User Profile)
+       │
+       ▼
+Provider LLM API (OpenAI / Anthropic / Google Gemini)</div>
                                 </div>
                             </div>
                         </div>
@@ -505,6 +529,47 @@ Supabase PostgreSQL Storage
        ├── agents & events (Scoped by organization_id)
        └── model_profiles (GLOBAL - Reference directory)
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DETAILED DEVELOPER GUIDE MODAL -->
+    <div class="modal-backdrop" id="dev-guide-modal">
+        <div class="modal-card" style="max-width: 720px;">
+            <div class="modal-header">
+                <h3>📖 Developer Integration & Setup Walkthrough</h3>
+                <button class="modal-close" id="dev-guide-close-btn">&times;</button>
+            </div>
+            <div class="modal-body" style="line-height: 1.6; color: #334155; font-size: 0.925rem;">
+                <div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 1rem; margin-bottom: 1.25rem; border-radius: 4px;">
+                    <strong>Overview:</strong> Connecting your LLM application or gateway to the Governance Tracker requires zero backend refactoring. The Interceptor SDK observes routing decisions and posts substitution events directly to your personal account.
+                </div>
+
+                <h4 style="margin-top: 1.25rem; color: #0f172a;">Step 1: Get Your Account API Key</h4>
+                <p>Log in to your dashboard and copy your Developer API Key from the top of the <strong>Integration</strong> tab. If you need a fresh raw key secret, click <strong>Regenerate Key</strong> to generate and copy a new secret.</p>
+
+                <h4 style="margin-top: 1.25rem; color: #0f172a;">Step 2: Add API Key to Your App Environment</h4>
+                <p>Open your application's <code>.env</code> file (e.g., in your FastAPI, Next.js, or Python backend) and add your API key:</p>
+                <div class="code-box">TRACKER_URL="https://model-substitution-governance-event.onrender.com"
+API_KEY="usr_live_your_copied_key_here"</div>
+
+                <h4 style="margin-top: 1.25rem; color: #0f172a;">Step 3: Install & Call the Interceptor</h4>
+                <p>In your gateway routing logic, import the interceptor and call <code>intercept()</code> whenever a model substitution occurs:</p>
+                <div class="code-box">from governance_interceptor import GovernanceInterceptor
+
+interceptor = GovernanceInterceptor()
+
+# When your gateway routes or substitutes a model:
+interceptor.intercept(
+    requested_model="GPT-4o",
+    actual_model="Gemini 1.5 Flash",
+    reason="cost", # 'cost', 'availability', or 'policy'
+    agent_id="Document-Analyzer-Agent",
+    session_id="document-upload-001"
+)</div>
+
+                <h4 style="margin-top: 1.25rem; color: #0f172a;">Step 4: Verify Live Events on Dashboard</h4>
+                <p>Run your application and scan a document or execute an LLM prompt. Switch back to this dashboard and open the <strong>Governance Event Recorder</strong> tab (or click <strong>Refresh</strong>). Your event will immediately populate in the real-time table!</p>
             </div>
         </div>
     </div>

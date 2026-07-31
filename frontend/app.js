@@ -369,14 +369,15 @@ async function fetchUserApiKey() {
         const res = await fetchWithAuth(`${APP_CONFIG.RENDER_API_BASE}/auth/api-key`);
         if (res.ok) {
             const data = await res.json();
-            const keyText = cachedKey || (data.key_prefix ? `${data.key_prefix}••••••••••••` : 'usr_live_demo_key');
+            const activeKeySecret = (cachedKey && cachedKey !== 'null') ? cachedKey : (data.api_key && data.api_key !== 'null') ? data.api_key : null;
+            const displayKeyText = activeKeySecret || (data.key_prefix ? `${data.key_prefix}••••••••••••••••` : 'usr_live_demo_key');
             
             const keyTextElem = document.getElementById('api-key-text');
-            if (keyTextElem) keyTextElem.innerText = keyText;
+            if (keyTextElem) keyTextElem.innerText = displayKeyText;
 
             const step3Box = document.getElementById('step3-config-box');
             if (step3Box) {
-                step3Box.innerText = `TRACKER_URL="https://model-substitution-governance-event.onrender.com"\nAPI_KEY="${cachedKey || (data.key_prefix ? data.key_prefix + '...' : 'usr_live_your_api_key_here')}"`;
+                step3Box.innerText = `TRACKER_URL="https://model-substitution-governance-event.onrender.com"\nAPI_KEY="${activeKeySecret || (data.key_prefix ? data.key_prefix + '...' : 'usr_live_your_api_key_here')}"`;
             }
         }
     } catch (e) {
@@ -726,6 +727,13 @@ function initModalListeners() {
     });
     document.getElementById('arch-close-btn')?.addEventListener('click', () => {
         document.getElementById('arch-modal').classList.remove('active');
+    });
+
+    document.getElementById('btn-open-dev-guide')?.addEventListener('click', () => {
+        document.getElementById('dev-guide-modal').classList.add('active');
+    });
+    document.getElementById('dev-guide-close-btn')?.addEventListener('click', () => {
+        document.getElementById('dev-guide-modal').classList.remove('active');
     });
 
     document.querySelectorAll('.help-btn').forEach(btn => {
