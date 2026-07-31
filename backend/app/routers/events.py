@@ -29,14 +29,28 @@ def record_substitution_event(
         payload.actual_model
     )
 
-    # 2. Evaluate Agent Compliance Whitelist for User Profile
+    # 2. Ensure Agent exists for User Profile
+    agent_repo = AgentRepository(db)
+    existing_agent = agent_repo.get_by_agent_id(payload.agent_id, user_profile_id)
+    if not existing_agent:
+        from backend.app.models.models import Agent
+        new_agent = Agent(
+            agent_id=payload.agent_id,
+            agent_name=payload.agent_id.replace('-', ' '),
+            description=f"Auto-registered agent for {payload.agent_id}",
+            user_profile_id=user_profile_id
+        )
+        db.add(new_agent)
+        db.commit()
+
+    # 3. Evaluate Agent Compliance Whitelist for User Profile
     compliance_flagged, compliance_reason = compliance_engine.evaluate_compliance(
         payload.agent_id,
         payload.actual_model,
         user_profile_id=user_profile_id
     )
 
-    # 3. Persist Governance Event Record under User Profile
+    # 4. Persist Governance Event Record under User Profile
     event = event_repo.create(
         requested_model=payload.requested_model,
         actual_model=payload.actual_model,

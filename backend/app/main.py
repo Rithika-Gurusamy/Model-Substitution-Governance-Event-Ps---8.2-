@@ -22,8 +22,9 @@ async def lifespan(app: FastAPI):
             conn.execute(text("ALTER TABLE agents ALTER COLUMN organization_id DROP NOT NULL;"))
             conn.execute(text("ALTER TABLE governance_events ALTER COLUMN organization_id DROP NOT NULL;"))
 
-            # Fix: drop legacy UNIQUE constraint on ix_agents_agent_id if present
+            # Fix: drop legacy constraints if present
             conn.execute(text("DROP INDEX IF EXISTS ix_agents_agent_id;"))
+            conn.execute(text("ALTER TABLE governance_events DROP CONSTRAINT IF EXISTS governance_events_agent_id_fkey;"))
 
             # Add user_profile_id column to agents and governance_events
             conn.execute(text("ALTER TABLE agents ADD COLUMN IF NOT EXISTS user_profile_id VARCHAR;"))
