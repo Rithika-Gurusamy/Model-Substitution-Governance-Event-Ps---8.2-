@@ -128,24 +128,28 @@ def seed_database(db: Session):
 
     # Seed Agents & Approved Models for Default Demo User
     for agent_data in SEED_AGENTS:
-        existing_agent = db.query(Agent).filter(
-            Agent.agent_id == agent_data["agent_id"],
-            Agent.user_profile_id == DEFAULT_DEMO_USER_PROFILE_ID
-        ).first()
-        if not existing_agent:
-            agent_obj = Agent(
-                agent_id=agent_data["agent_id"],
-                agent_name=agent_data["agent_name"],
-                description=agent_data["description"],
-                user_profile_id=DEFAULT_DEMO_USER_PROFILE_ID
-            )
-            db.add(agent_obj)
-            db.commit()
-            db.refresh(agent_obj)
+        try:
+            existing_agent = db.query(Agent).filter(
+                Agent.agent_id == agent_data["agent_id"],
+                Agent.user_profile_id == DEFAULT_DEMO_USER_PROFILE_ID
+            ).first()
+            if not existing_agent:
+                agent_obj = Agent(
+                    agent_id=agent_data["agent_id"],
+                    agent_name=agent_data["agent_name"],
+                    description=agent_data["description"],
+                    user_profile_id=DEFAULT_DEMO_USER_PROFILE_ID
+                )
+                db.add(agent_obj)
+                db.commit()
+                db.refresh(agent_obj)
 
-            for m_name in agent_data["approved_models"]:
-                db.add(ApprovedModel(agent_db_id=agent_obj.id, model_name=m_name))
-            db.commit()
+                for m_name in agent_data["approved_models"]:
+                    db.add(ApprovedModel(agent_db_id=agent_obj.id, model_name=m_name))
+                db.commit()
+        except Exception as e:
+            db.rollback()
+            print(f"Notice: Agent seed skipped for {agent_data['agent_id']}: {e}")
 
     # Pre-seed initial demonstration events attached to Default Demo User
     existing_events_count = db.query(GovernanceEvent).filter(GovernanceEvent.user_profile_id == DEFAULT_DEMO_USER_PROFILE_ID).count()

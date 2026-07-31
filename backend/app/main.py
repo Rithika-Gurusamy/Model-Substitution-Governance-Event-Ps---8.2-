@@ -17,11 +17,18 @@ async def lifespan(app: FastAPI):
     # 2. Additive DDL Schema Migration
     try:
         with engine.connect() as conn:
-            # Fix: make organization_id nullable in user_profiles (old schema had NOT NULL)
+            # Fix: make organization_id nullable across all legacy tables
             conn.execute(text("ALTER TABLE user_profiles ALTER COLUMN organization_id DROP NOT NULL;"))
+            conn.execute(text("ALTER TABLE agents ALTER COLUMN organization_id DROP NOT NULL;"))
+            conn.execute(text("ALTER TABLE governance_events ALTER COLUMN organization_id DROP NOT NULL;"))
+
+            # Fix: drop legacy UNIQUE constraint on ix_agents_agent_id if present
+            conn.execute(text("DROP INDEX IF EXISTS ix_agents_agent_id;"))
+
             # Add user_profile_id column to agents and governance_events
             conn.execute(text("ALTER TABLE agents ADD COLUMN IF NOT EXISTS user_profile_id VARCHAR;"))
             conn.execute(text("ALTER TABLE governance_events ADD COLUMN IF NOT EXISTS user_profile_id VARCHAR;"))
+
             # Create api_keys table if not exists
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS api_keys (
