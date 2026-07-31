@@ -186,7 +186,7 @@
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card" id="integration-steps-section">
                     <div class="card-header">
                         <h2>SDK & Gateway Integration Guide</h2>
                         <a href="https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-/releases/download/v1.0.0/governance-interceptor-v1.0.0.zip" id="btn-download-sdk-card" class="btn btn-primary" target="_blank">Download SDK Package (GitHub Release)</a>
@@ -200,7 +200,7 @@
                                 <div class="step-header">
                                     <span class="step-badge">Step 1</span>
                                     <h3>Download SDK</h3>
-                                    <button class="help-btn text-sm step-help-btn" style="margin-left: auto;">ⓘ Info</button>
+                                    <button class="help-btn text-sm step-help-btn" data-step="1" style="margin-left: auto;">ⓘ Info</button>
                                 </div>
                                 <div class="step-body">
                                     <p>First, download the official <code>governance-interceptor-v1.0.0.zip</code> package directly from GitHub Releases CDN.</p>
@@ -215,7 +215,7 @@
                                 <div class="step-header">
                                     <span class="step-badge">Step 2</span>
                                     <h3>Installation</h3>
-                                    <button class="help-btn text-sm step-help-btn" style="margin-left: auto;">ⓘ Info</button>
+                                    <button class="help-btn text-sm step-help-btn" data-step="2" style="margin-left: auto;">ⓘ Info</button>
                                 </div>
                                 <div class="step-body">
                                     <p>Second, install the interceptor directly into your AI application's Python environment via pip:</p>
@@ -232,7 +232,7 @@
                                 <div class="step-header">
                                     <span class="step-badge">Step 3</span>
                                     <h3>Configuration</h3>
-                                    <button class="help-btn text-sm step-help-btn" style="margin-left: auto;">ⓘ Info</button>
+                                    <button class="help-btn text-sm step-help-btn" data-step="3" style="margin-left: auto;">ⓘ Info</button>
                                 </div>
                                 <div class="step-body">
                                     <p>Third, set your Tracker endpoint URL and API key environment variables in your AI application's <code>.env</code> file:</p>
@@ -248,7 +248,7 @@ API_KEY="usr_live_your_api_key_here"</div>
                                 <div class="step-header">
                                     <span class="step-badge">Step 4</span>
                                     <h3>Import & Intercept</h3>
-                                    <button class="help-btn text-sm step-help-btn" style="margin-left: auto;">ⓘ Info</button>
+                                    <button class="help-btn text-sm step-help-btn" data-step="4" style="margin-left: auto;">ⓘ Info</button>
                                 </div>
                                 <div class="step-body">
                                     <p>Fourth, attach the interceptor right after your AI application's gateway selects the target model:</p>
@@ -274,7 +274,7 @@ interceptor.intercept(
                                 <div class="step-header">
                                     <span class="step-badge">Step 5</span>
                                     <h3>Gateway Routing Architecture Flow</h3>
-                                    <button class="help-btn text-sm step-help-btn" style="margin-left: auto;">ⓘ Info</button>
+                                    <button class="help-btn text-sm step-help-btn" data-step="5" style="margin-left: auto;">ⓘ Info</button>
                                 </div>
                                 <div class="step-body">
                                     <p>Fifth, understand the lifecycle request flow between your AI application and the Governance Tracker:</p>
@@ -302,7 +302,7 @@ Provider LLM API (OpenAI / Anthropic / Google Gemini)</div>
                                 <div class="step-header">
                                     <span class="step-badge">Step 6</span>
                                     <h3>Try It Live & Verify</h3>
-                                    <button class="help-btn text-sm step-help-btn" style="margin-left: auto;">ⓘ Info</button>
+                                    <button class="help-btn text-sm step-help-btn" data-step="6" style="margin-left: auto;">ⓘ Info</button>
                                 </div>
                                 <div class="step-body">
                                     <p>Finally, run your AI application, process requests, and click Refresh on the Governance Event Recorder tab to verify live events!</p>

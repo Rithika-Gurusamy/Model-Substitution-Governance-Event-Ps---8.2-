@@ -706,8 +706,129 @@ function initTabNavigation() {
 
     document.getElementById('btn-goto-integration')?.addEventListener('click', () => {
         document.querySelector('.tab-btn[data-tab="tab-integration"]')?.click();
+        setTimeout(() => {
+            const stepSection = document.getElementById('integration-steps-section');
+            if (stepSection) {
+                stepSection.scrollIntoView({ behavior: 'smooth' });
+            }
+        }, 100);
     });
 }
+
+const stepGuideDetails = {
+    1: {
+        title: "Step 1: Download Interceptor SDK Package",
+        content: `
+            <div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 1rem; margin-bottom: 1.25rem; border-radius: 4px;">
+                <strong>Objective:</strong> Download the official Interceptor SDK distribution package to install in your AI application's Python environment.
+            </div>
+            <h4 style="color: #0f172a; margin-top: 1rem;">Detailed Instructions:</h4>
+            <ol style="padding-left: 1.2rem; line-height: 1.7; color: #334155;">
+                <li>Click the <strong>Download SDK (.zip)</strong> button on the step card or download <code>governance-interceptor-v1.0.0.zip</code> directly from GitHub Releases CDN.</li>
+                <li>Save the <code>governance-interceptor-v1.0.0.zip</code> file in your project root or downloads folder.</li>
+                <li>You do not need to manually extract the zip file — <code>pip</code> can install directly from the zip package!</li>
+            </ol>
+        `
+    },
+    2: {
+        title: "Step 2: Install Interceptor into Your Environment",
+        content: `
+            <div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 1rem; margin-bottom: 1.25rem; border-radius: 4px;">
+                <strong>Objective:</strong> Install the lightweight <code>governance-interceptor</code> library into your AI application's virtual environment.
+            </div>
+            <h4 style="color: #0f172a; margin-top: 1rem;">Detailed Instructions:</h4>
+            <ol style="padding-left: 1.2rem; line-height: 1.7; color: #334155;">
+                <li>Open your terminal and activate your AI application's Python virtual environment (e.g., <code>venv</code>, <code>conda</code>, or <code>poetry</code>).</li>
+                <li>Install directly via pip:
+                    <div class="code-box">pip install governance-interceptor</div>
+                </li>
+                <li>Or install from the downloaded zip file path:
+                    <div class="code-box">pip install path/to/governance-interceptor-v1.0.0.zip</div>
+                </li>
+                <li>Verify installation by running: <br><code>python -c "import governance_interceptor; print('SDK Ready')"</code></li>
+            </ol>
+        `
+    },
+    3: {
+        title: "Step 3: Configure Environment Variables (.env)",
+        content: `
+            <div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 1rem; margin-bottom: 1.25rem; border-radius: 4px;">
+                <strong>Objective:</strong> Configure your AI application's <code>.env</code> file with your Developer API Key so events are isolated to your account.
+            </div>
+            <h4 style="color: #0f172a; margin-top: 1rem;">Detailed Instructions:</h4>
+            <ol style="padding-left: 1.2rem; line-height: 1.7; color: #334155;">
+                <li>Copy your Developer API Key from the top of the <strong>Integration</strong> tab (or click <strong>Regenerate Key</strong> if you need a fresh secret).</li>
+                <li>Open your AI application's <code>.env</code> file (or create one in your project root directory).</li>
+                <li>Add the following environment variables:
+                    <div class="code-box">TRACKER_URL="https://model-substitution-governance-event.onrender.com"
+API_KEY="usr_live_your_copied_key_here"</div>
+                </li>
+                <li>In Python, ensure <code>python-dotenv</code> is installed so environment variables load on startup:
+                    <div class="code-box">import dotenv
+dotenv.load_dotenv()</div>
+                </li>
+            </ol>
+        `
+    },
+    4: {
+        title: "Step 4: Import & Call the Interceptor SDK",
+        content: `
+            <div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 1rem; margin-bottom: 1.25rem; border-radius: 4px;">
+                <strong>Objective:</strong> Call <code>interceptor.intercept()</code> in your LLM Gateway routing code whenever model routing occurs.
+            </div>
+            <h4 style="color: #0f172a; margin-top: 1rem;">Detailed Instructions:</h4>
+            <ol style="padding-left: 1.2rem; line-height: 1.7; color: #334155;">
+                <li>Import <code>GovernanceInterceptor</code> in your gateway router file:
+                    <div class="code-box">from governance_interceptor import GovernanceInterceptor
+
+interceptor = GovernanceInterceptor()</div>
+                </li>
+                <li>Whenever your gateway routes or substitutes a model, pass the routing details:
+                    <div class="code-box">interceptor.intercept(
+    requested_model="GPT-4o",        # Original requested model
+    actual_model="Gemini 1.5 Flash", # Actual model selected by gateway
+    reason="cost",                   # 'cost', 'availability', or 'policy'
+    agent_id="AI-Assistant-Agent",   # Name of invoking agent
+    session_id="session-102"         # Session / document ID
+)</div>
+                </li>
+                <li>If <code>requested_model == actual_model</code>, the SDK automatically ignores it. If <code>requested_model != actual_model</code>, it captures and posts a Governance Event to Render!</li>
+            </ol>
+        `
+    },
+    5: {
+        title: "Step 5: Gateway Routing Architecture Flow",
+        content: `
+            <div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 1rem; margin-bottom: 1.25rem; border-radius: 4px;">
+                <strong>Objective:</strong> Understand how model substitution events flow from your AI application to the Cloud Governance Tracker.
+            </div>
+            <h4 style="color: #0f172a; margin-top: 1rem;">Architecture Lifecycle Steps:</h4>
+            <ol style="padding-left: 1.2rem; line-height: 1.7; color: #334155;">
+                <li><strong>Client Request:</strong> User or client sends a prompt requesting a model (e.g., <code>GPT-4</code>).</li>
+                <li><strong>Gateway Routing Decision:</strong> Your LLM Gateway evaluates rules (character limits, cost budgets, rate limits) and routes to an actual model (e.g., <code>Gemini 1.5 Flash</code>).</li>
+                <li><strong>SDK Interception:</strong> The Interceptor SDK compares requested vs. actual model. Because they differ, it sends an <code>HTTP POST /api/v1/events</code> payload with your <code>X-API-Key</code>.</li>
+                <li><strong>Risk & Compliance Evaluation:</strong> The Cloud Tracker backend calculates capability context downgrade %, assigns a Risk Level (Low/Medium/High/Critical), and checks whitelists.</li>
+                <li><strong>Real-time Dashboard Update:</strong> The event is saved under your account profile and populates on your dashboard immediately!</li>
+            </ol>
+        `
+    },
+    6: {
+        title: "Step 6: Run Your Application & Verify Live Events",
+        content: `
+            <div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 1rem; margin-bottom: 1.25rem; border-radius: 4px;">
+                <strong>Objective:</strong> Run your AI application, trigger a model substitution, and verify live recorded events on your dashboard.
+            </div>
+            <h4 style="color: #0f172a; margin-top: 1rem;">Verification Walkthrough:</h4>
+            <ol style="padding-left: 1.2rem; line-height: 1.7; color: #334155;">
+                <li>Start your AI application (e.g., <code>uvicorn app:main</code> or <code>python main.py</code>).</li>
+                <li>Execute an LLM query or process a prompt that triggers model substitution.</li>
+                <li>Switch back to this dashboard and open the <strong>Governance Event Recorder</strong> tab.</li>
+                <li>Click <strong>Refresh</strong> — your event will appear in the table with full timestamp, agent ID, models, risk level, and compliance status!</li>
+                <li>Click <strong>Inspect</strong> on any row to view complete JSON payload metadata and risk breakdown.</li>
+            </ol>
+        `
+    }
+};
 
 function initFilterListeners() {
     ['filter-agent', 'filter-reason', 'filter-risk', 'filter-compliance'].forEach(id => {
@@ -730,9 +851,14 @@ function initModalListeners() {
     });
 
     document.getElementById('btn-open-dev-guide')?.addEventListener('click', () => {
+        const step1Data = stepGuideDetails[1];
+        document.querySelector('#dev-guide-modal h3').innerText = "📖 Developer Integration Walkthrough";
+        document.querySelector('#dev-guide-modal .modal-body').innerHTML = stepGuideDetails[1].content;
         document.getElementById('dev-guide-modal').classList.add('active');
     });
     document.getElementById('btn-open-dev-guide-inline')?.addEventListener('click', () => {
+        document.querySelector('#dev-guide-modal h3').innerText = "📖 Developer Integration Walkthrough";
+        document.querySelector('#dev-guide-modal .modal-body').innerHTML = stepGuideDetails[1].content;
         document.getElementById('dev-guide-modal').classList.add('active');
     });
     document.getElementById('dev-guide-close-btn')?.addEventListener('click', () => {
@@ -740,7 +866,17 @@ function initModalListeners() {
     });
 
     document.querySelectorAll('.step-help-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const stepNum = btn.getAttribute('data-step') || 1;
+            const details = stepGuideDetails[stepNum] || stepGuideDetails[1];
+            
+            const modalHeader = document.querySelector('#dev-guide-modal h3');
+            const modalBody = document.querySelector('#dev-guide-modal .modal-body');
+            
+            if (modalHeader) modalHeader.innerText = details.title;
+            if (modalBody) modalBody.innerHTML = details.content;
+            
             document.getElementById('dev-guide-modal').classList.add('active');
         });
     });
