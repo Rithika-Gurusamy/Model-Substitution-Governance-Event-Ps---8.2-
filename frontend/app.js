@@ -235,7 +235,7 @@ function initAuthLanding() {
                 const data = await res.json();
                 localStorage.setItem('governance_auth_token', data.access_token);
                 localStorage.setItem('governance_user_profile', JSON.stringify(data.user));
-                if (data.api_key) {
+                if (data.api_key && data.api_key !== 'null') {
                     localStorage.setItem('governance_active_api_key', data.api_key);
                 }
                 showDashboardView(data.user);
@@ -284,7 +284,7 @@ function initAuthLanding() {
                 const data = await res.json();
                 localStorage.setItem('governance_auth_token', `user_token_${data.user.id}`);
                 localStorage.setItem('governance_user_profile', JSON.stringify(data.user));
-                if (data.api_key) {
+                if (data.api_key && data.api_key !== 'null') {
                     localStorage.setItem('governance_active_api_key', data.api_key);
                 }
                 showDashboardView(data.user);

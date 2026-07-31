@@ -58,30 +58,42 @@ def direct_signup(payload: DirectSignupRequest, db: Session = Depends(get_db)):
 @router.post("/login")
 def direct_login(payload: DirectLoginRequest, db: Session = Depends(get_db)):
     email_clean = payload.email.strip().lower()
-    
+
     user_profile = db.query(UserProfile).filter(UserProfile.auth_user_id == email_clean).first()
     if not user_profile:
         raise HTTPException(status_code=401, detail="Invalid email or password. Please check your credentials or create an account.")
 
-    # Fetch or generate API Key for user
-    api_key_obj = db.query(ApiKey).filter(ApiKey.user_profile_id == user_profile.id).order_by(ApiKey.created_at.desc()).first()
-    raw_api_key = None
-    key_prefix = api_key_obj.key_prefix if api_key_obj else None
-    if not api_key_obj:
-        raw_api_key = generate_api_key_for_user(user_profile.id, db)
-        key_prefix = raw_api_key[:12]
+    # Always regenerate API key on login so the user can copy a fresh one
+    db.query(ApiKey).filter(ApiKey.user_profile_id == user_profile.id).delete()
+    db.commit()
+    raw_api_key = generate_api_key_for_user(user_profile.id, db)
 
     return {
         "status": "success",
         "access_token": f"user_token_{user_profile.id}",
         "api_key": raw_api_key,
-        "key_prefix": key_prefix,
+        "key_prefix": raw_api_key[:12],
         "user": {
             "id": user_profile.id,
             "email": email_clean,
             "full_name": user_profile.full_name,
             "role": user_profile.role
         }
+    }
+
+@router.get("/me")
+def get_me(
+    auth_data: Tuple[Optional[UserProfile], str] = Depends(get_current_user_and_org),
+    db: Session = Depends(get_db)
+):
+    user_profile, user_profile_id = auth_data
+    if not user_profile:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return {
+        "id": user_profile.id,
+        "email": user_profile.auth_user_id,
+        "full_name": user_profile.full_name,
+        "role": user_profile.role
     }
 
 @router.get("/api-key")
