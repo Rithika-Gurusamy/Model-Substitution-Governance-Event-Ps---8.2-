@@ -63,16 +63,20 @@ def direct_login(payload: DirectLoginRequest, db: Session = Depends(get_db)):
     if not user_profile:
         raise HTTPException(status_code=401, detail="Invalid email or password. Please check your credentials or create an account.")
 
-    # Always regenerate API key on login so the user can copy a fresh one
-    db.query(ApiKey).filter(ApiKey.user_profile_id == user_profile.id).delete()
-    db.commit()
-    raw_api_key = generate_api_key_for_user(user_profile.id, db)
+    # Retrieve existing API key or generate one if user doesn't have one
+    key_obj = db.query(ApiKey).filter(ApiKey.user_profile_id == user_profile.id).order_by(ApiKey.created_at.desc()).first()
+    if not key_obj:
+        raw_api_key = generate_api_key_for_user(user_profile.id, db)
+        key_prefix = raw_api_key[:12]
+    else:
+        raw_api_key = None
+        key_prefix = key_obj.key_prefix
 
     return {
         "status": "success",
         "access_token": f"user_token_{user_profile.id}",
         "api_key": raw_api_key,
-        "key_prefix": raw_api_key[:12],
+        "key_prefix": key_prefix,
         "user": {
             "id": user_profile.id,
             "email": email_clean,

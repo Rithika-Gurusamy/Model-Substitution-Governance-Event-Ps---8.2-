@@ -50,12 +50,17 @@ def get_current_user_and_org(
     api_key_header = request.headers.get("X-API-Key")
     if api_key_header:
         key_clean = api_key_header.strip()
-        key_hash = hashlib.sha256(key_clean.encode("utf-8")).hexdigest()
-        key_record = db.query(ApiKey).filter(ApiKey.key_hash == key_hash).first()
-        if key_record:
-            user_profile = db.query(UserProfile).filter(UserProfile.id == key_record.user_profile_id).first()
-            if user_profile:
-                return user_profile, user_profile.id
+        if key_clean and key_clean.lower() != "null":
+            key_hash = hashlib.sha256(key_clean.encode("utf-8")).hexdigest()
+            key_record = db.query(ApiKey).filter(ApiKey.key_hash == key_hash).first()
+            if key_record:
+                user_profile = db.query(UserProfile).filter(UserProfile.id == key_record.user_profile_id).first()
+                if user_profile:
+                    return user_profile, user_profile.id
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid API Key. Please copy your active API Key from the dashboard integration tab."
+            )
 
     # 2. Check Bearer Token Header (Dashboard Browser session)
     if credentials and credentials.credentials:
