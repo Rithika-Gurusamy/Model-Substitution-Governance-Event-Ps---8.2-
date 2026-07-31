@@ -901,9 +901,9 @@ function initModalListeners() {
 function initSimulator() {
     const runSim = async () => {
         const sampleEvents = [
+            { requested_model: "Gemini 1.5 Pro", actual_model: "Gemini 1.5 Flash", reason: "cost", agent_id: "Support-Router", session_id: "sess-sim-" + Math.floor(Math.random()*1000) },
             { requested_model: "GPT-5", actual_model: "GPT-4o Mini", reason: "cost", agent_id: "HR-Agent", session_id: "sess-sim-" + Math.floor(Math.random()*1000) },
-            { requested_model: "Claude 3.5 Sonnet", actual_model: "Claude 3 Haiku", reason: "availability", agent_id: "Finance-Bot", session_id: "sess-sim-" + Math.floor(Math.random()*1000) },
-            { requested_model: "Gemini 1.5 Pro", actual_model: "Gemini 1.5 Flash", reason: "cost", agent_id: "Support-Router", session_id: "sess-sim-" + Math.floor(Math.random()*1000) }
+            { requested_model: "Claude 3.5 Sonnet", actual_model: "Claude 3 Haiku", reason: "availability", agent_id: "Finance-Bot", session_id: "sess-sim-" + Math.floor(Math.random()*1000) }
         ];
 
         const payload = sampleEvents[Math.floor(Math.random() * sampleEvents.length)];
@@ -916,13 +916,41 @@ function initSimulator() {
             });
 
             if (res.ok) {
-                alert(`Simulated Substitution Event Sent!\nRequested: ${payload.requested_model} → Actual: ${payload.actual_model}`);
+                // Populate popup modal
+                const reqSpan = document.getElementById('sim-modal-requested');
+                const actSpan = document.getElementById('sim-modal-actual');
+                const reasonSpan = document.getElementById('sim-modal-reason');
+
+                if (reqSpan) reqSpan.innerText = payload.requested_model;
+                if (actSpan) actSpan.innerText = payload.actual_model;
+                if (reasonSpan) {
+                    reasonSpan.innerText = payload.reason.toUpperCase();
+                    reasonSpan.className = `badge reason-${payload.reason.toLowerCase()}`;
+                }
+
+                // Refresh data in background
                 loadAllData();
+
+                // Open Modal
+                document.getElementById('sim-modal')?.classList.add('active');
             }
         } catch (e) {
             alert("Simulation failed: " + e.message);
         }
     };
+
+    // Wire close and view buttons
+    const closeSimModal = () => {
+        document.getElementById('sim-modal')?.classList.remove('active');
+    };
+
+    document.getElementById('sim-modal-close-btn')?.addEventListener('click', closeSimModal);
+    document.getElementById('sim-modal-btn-close')?.addEventListener('click', closeSimModal);
+
+    document.getElementById('sim-modal-btn-view-event')?.addEventListener('click', () => {
+        closeSimModal();
+        document.querySelector('.tab-btn[data-tab="tab-events"]')?.click();
+    });
 
     document.getElementById('btn-open-sim')?.addEventListener('click', runSim);
     document.getElementById('btn-run-sim-step')?.addEventListener('click', runSim);

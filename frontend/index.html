@@ -540,6 +540,45 @@ interceptor.intercept(
         </div>
     </div>
 
+    <!-- SIMULATION SUCCESS POPUP MODAL -->
+    <div class="modal-backdrop" id="sim-modal">
+        <div class="modal-card" style="max-width: 540px;">
+            <div class="modal-header" style="background: #f0fdf4; border-bottom: 1px solid #bbf7d0;">
+                <h3 style="color: #166534; margin: 0; font-size: 1.1rem;">
+                    Simulated Substitution Event Sent!
+                </h3>
+                <button class="modal-close" id="sim-modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 1.25rem;">
+                <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
+                    <div style="font-size: 0.8rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.6rem;">Recorded Gateway Routing Event</div>
+                    <div style="font-size: 0.95rem; color: #0f172a; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+                        <span>Requested Model:</span>
+                        <span class="model-tag requested" id="sim-modal-requested" style="font-weight: 700;">Gemini 1.5 Pro</span>
+                    </div>
+                    <div style="font-size: 0.95rem; color: #0f172a; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+                        <span>Actual Model Used:</span>
+                        <span class="model-tag actual" id="sim-modal-actual" style="font-weight: 700;">Gemini 1.5 Flash</span>
+                    </div>
+                    <div style="font-size: 0.9rem; color: #334155; display: flex; align-items: center; justify-content: space-between;">
+                        <span>Routing Reason:</span>
+                        <span class="badge reason-cost" id="sim-modal-reason" style="font-weight: 700;">COST</span>
+                    </div>
+                </div>
+
+                <div style="background: #eff6ff; border: 1px solid #93c5fd; border-radius: 8px; padding: 1rem; color: #1e3a8a; font-size: 0.875rem; line-height: 1.6;">
+                    <strong>💡 What to do next:</strong><br>
+                    Click <strong>View Recorded Event</strong> below (or switch to the <strong>Governance Event Recorder</strong> tab) to view this recent substitution recorded live in your audit logs!
+                </div>
+
+                <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+                    <button class="btn btn-secondary" id="sim-modal-btn-close">Close</button>
+                    <button class="btn btn-primary" id="sim-modal-btn-view-event">View Recorded Event ➔</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="config.js"></script>
     <script src="app.js"></script>
 </body>
