@@ -7,25 +7,17 @@ logger = logging.getLogger("DatabaseSetup")
 
 db_url = settings.DATABASE_URL
 
-# Test PostgreSQL engine connection on startup; use SQLite engine if unavailable
-try:
-    if db_url.startswith("sqlite"):
-        engine = create_engine(db_url, connect_args={"check_same_thread": False})
-    else:
-        test_engine = create_engine(
-            db_url,
-            pool_pre_ping=True,
-            pool_size=5,
-            max_overflow=10,
-            connect_args={"connect_timeout": 3}
-        )
-        with test_engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        engine = test_engine
-        logger.info("Successfully connected to remote PostgreSQL database.")
-except Exception as e:
-    logger.warning(f"Remote database ping failed ({e}). Initializing fallback database engine.")
-    engine = create_engine("sqlite:///./governance.db", connect_args={"check_same_thread": False})
+if db_url.startswith("sqlite"):
+    engine = create_engine(db_url, connect_args={"check_same_thread": False})
+else:
+    engine = create_engine(
+        db_url,
+        pool_pre_ping=True,
+        pool_size=10,
+        max_overflow=20,
+        connect_args={"connect_timeout": 10}
+    )
+    logger.info("Successfully configured PostgreSQL database engine.")
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

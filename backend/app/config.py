@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     ENVIRONMENT: str = "production"
     
-    DATABASE_URL: str = "postgresql://postgres.fzluhjcenawlekrqdlxb:thisismyseconddeploy@aws-0-ap-south-1.pooler.supabase.com:6543/postgres"
+    DATABASE_URL: str = "postgresql://postgres.fzluhjcenawlekrqdlxb:thisismyseconddeploy@aws-1-ap-south-1.pooler.supabase.com:5432/postgres"
     CORS_ORIGINS: List[str] = ["*"]
     API_PREFIX: str = "/api/v1"
     
