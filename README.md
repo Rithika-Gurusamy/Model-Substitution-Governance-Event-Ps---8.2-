@@ -73,27 +73,27 @@ This platform provides a complete governance solution: a **Zero-Latency Intercep
 +-----------------------------------------------------------------------------------+
 |                            GOVERNANCE INTERCEPTOR SDK                             |
 |  Checks if Requested Model != Actual Model Used                                   |
-|  Posts asynchronous HTTP event to Cloud Tracker with Developer API Key           |
+|  Posts asynchronous HTTP event to Cloud Tracker with Developer API Key            |
 +-----------------------------------------------------------------------------------+
                                          |
                                          v
 +-----------------------------------------------------------------------------------+
-|                        FASTAPI CLOUD TRACKER ENGINE (Render)                       |
+|                        FASTAPI CLOUD TRACKER ENGINE (Render)                      |
 |  1. Authenticates Developer API Key & resolves Organization Scope                 |
 |  2. Risk Assessor Engine calculates Context Downgrade % & Risk Level              |
-|  3. Compliance Engine verifies Agent Whitelist & flags policy violations           |
+|  3. Compliance Engine verifies Agent Whitelist & flags policy violations          |
 +-----------------------------------------------------------------------------------+
                                          |
                                          v
 +-----------------------------------------------------------------------------------+
 |                         SUPABASE POSTGRESQL DATABASE                              |
-|  Persists structured event records, risk analytics, and compliance audit logs    |
+|  Persists structured event records, risk analytics, and compliance audit logs     |
 +-----------------------------------------------------------------------------------+
                                          |
                                          v
 +-----------------------------------------------------------------------------------+
 |                         VERCEL GOVERNANCE DASHBOARD UI                            |
-|  Displays real-time event logs, risk distribution matrices, and audit reports    |
+|  Displays real-time event logs, risk distribution matrices, and audit reports     |
 +-----------------------------------------------------------------------------------+
 ```
 
