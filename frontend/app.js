@@ -489,9 +489,18 @@ function renderEventsTable() {
         return;
     }
 
+function formatUTCTimestamp(tsStr) {
+    if (!tsStr) return '';
+    let formatted = String(tsStr);
+    if (!formatted.endsWith('Z') && !formatted.includes('+')) {
+        formatted += 'Z';
+    }
+    return new Date(formatted).toLocaleString();
+}
+
     tbody.innerHTML = filtered.map(e => `
         <tr>
-            <td class="font-mono text-sm">${new Date(e.timestamp).toLocaleString()}</td>
+            <td class="font-mono text-sm">${formatUTCTimestamp(e.timestamp)}</td>
             <td><strong>${e.agent_id}</strong></td>
             <td><span class="model-tag requested">${e.requested_model}</span></td>
             <td><span class="model-tag actual">${e.actual_model}</span></td>
@@ -583,7 +592,7 @@ window.inspectEvent = function(eventId) {
     const modalContent = document.getElementById('modal-content');
     modalContent.innerHTML = `
         <div class="detail-row"><strong>Event ID:</strong> <span class="font-mono">${event.id}</span></div>
-        <div class="detail-row"><strong>Timestamp:</strong> ${new Date(event.timestamp).toLocaleString()}</div>
+        <div class="detail-row"><strong>Timestamp:</strong> ${formatUTCTimestamp(event.timestamp)}</div>
         <div class="detail-row"><strong>Agent ID:</strong> ${event.agent_id}</div>
         <div class="detail-row"><strong>Session ID:</strong> <span class="font-mono">${event.session_id}</span></div>
         <hr class="divider">
