@@ -29,18 +29,25 @@ def record_substitution_event(
         payload.actual_model
     )
 
-    # 2. Ensure Agent exists in database to satisfy foreign key constraint
+    # 2. Ensure Agent exists in database to satisfy foreign key / compliance matching
     from backend.app.models.models import Agent
-    global_agent = db.query(Agent).filter(Agent.agent_id == payload.agent_id).first()
+    global_agent = db.query(Agent).filter(
+        Agent.agent_id == payload.agent_id,
+        (Agent.user_profile_id == user_profile_id) | (Agent.user_profile_id == None)
+    ).first()
+
     if not global_agent:
-        new_agent = Agent(
-            agent_id=payload.agent_id,
-            agent_name=payload.agent_id.replace('-', ' '),
-            description=f"Auto-registered agent for {payload.agent_id}",
-            user_profile_id=user_profile_id
-        )
-        db.add(new_agent)
-        db.commit()
+        try:
+            new_agent = Agent(
+                agent_id=payload.agent_id,
+                agent_name=payload.agent_id.replace('-', ' '),
+                description=f"Auto-registered agent for {payload.agent_id}",
+                user_profile_id=user_profile_id
+            )
+            db.add(new_agent)
+            db.commit()
+        except Exception as err:
+            db.rollback()
 
     # 3. Evaluate Agent Compliance Whitelist for User Profile
     compliance_flagged, compliance_reason = compliance_engine.evaluate_compliance(
