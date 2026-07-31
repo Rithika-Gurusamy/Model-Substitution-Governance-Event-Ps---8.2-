@@ -60,6 +60,26 @@ class GovernanceInterceptor:
             logger.error(f"Error connecting to Governance Tracker endpoint '{self.events_endpoint}': {e}")
             return True, None
 
+    def intercept_substitution(
+        self,
+        requested_model: str,
+        actual_model: str,
+        reason: str,
+        agent_id: str,
+        session_id: str,
+        timestamp: Optional[datetime] = None,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> Tuple[bool, Optional[Dict[str, Any]]]:
+        """Backward compatibility alias for intercept()."""
+        return self.intercept(
+            requested_model=requested_model,
+            actual_model=actual_model,
+            reason=reason,
+            agent_id=agent_id,
+            session_id=session_id,
+            timestamp=timestamp
+        )
+
 def intercept_gateway_decision(
     requested_model: str,
     actual_model: str,

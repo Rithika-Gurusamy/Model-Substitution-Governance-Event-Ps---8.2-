@@ -1,30 +1,64 @@
-import urllib.request
-import urllib.parse
-import json
+import os
+import requests
 import logging
+from typing import Optional, Dict, Any, Tuple, Callable
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, Callable
 
-logger = logging.getLogger("governance_interceptor")
+logger = logging.getLogger("GovernanceInterceptor")
 
 class GovernanceInterceptor:
-    """
-    Lightweight Interceptor installed inside customer LLM Gateways.
-    
-    Observes model routing decisions and records every substitution event 
-    (requested_model != actual_model) to the Governance Tracker API.
-    """
-    def __init__(
+    def __init__(self, tracker_url: Optional[str] = None, api_key: Optional[str] = None):
+        target_url = tracker_url or os.getenv("TRACKER_URL") or "https://model-substitution-governance-event.onrender.com"
+        self.tracker_url = target_url.rstrip("/")
+        self.events_endpoint = f"{self.tracker_url}/api/v1/events"
+        self.api_key = api_key or os.getenv("API_KEY") or os.getenv("GOVERNANCE_API_KEY")
+
+    def intercept(
         self,
-        tracker_url: str = "http://localhost:8000",
-        api_key: Optional[str] = None,
-        timeout: float = 5.0,
-        fail_silently: bool = True
-    ):
-        self.tracker_url = tracker_url.rstrip('/')
-        self.api_key = api_key
-        self.timeout = timeout
-        self.fail_silently = fail_silently
+        requested_model: str,
+        actual_model: str,
+        reason: str,
+        agent_id: str,
+        session_id: str,
+        timestamp: Optional[datetime] = None
+    ) -> Tuple[bool, Optional[Dict[str, Any]]]:
+        """
+        Intercepts LLM gateway routing decisions.
+        If requested_model == actual_model, no substitution occurred.
+        If requested_model != actual_model, captures and sends Governance Event to Cloud Tracker.
+        """
+        if requested_model.strip().lower() == actual_model.strip().lower():
+            logger.debug(f"No substitution detected ({requested_model} used as requested).")
+            return False, None
+
+        logger.info(f"🚨 Model substitution detected! Requested: '{requested_model}' → Actual: '{actual_model}' (Reason: {reason})")
+
+        payload = {
+            "requested_model": requested_model,
+            "actual_model": actual_model,
+            "reason": reason,
+            "agent_id": agent_id,
+            "session_id": session_id,
+            "timestamp": (timestamp or datetime.now(timezone.utc)).isoformat()
+        }
+
+        headers = {"Content-Type": "application/json"}
+        if self.api_key:
+            headers["X-API-Key"] = self.api_key
+            headers["Authorization"] = f"Bearer {self.api_key}"
+
+        try:
+            response = requests.post(self.events_endpoint, json=payload, headers=headers, timeout=5.0)
+            if response.status_code in [200, 201]:
+                event_data = response.json()
+                logger.info(f"✅ Governance event recorded (ID: {event_data.get('id')}, Risk: {event_data.get('risk_level')}, Flagged: {event_data.get('compliance_flagged')})")
+                return True, event_data
+            else:
+                logger.error(f"Failed to record governance event: HTTP {response.status_code} - {response.text}")
+                return True, None
+        except Exception as e:
+            logger.error(f"Error connecting to Governance Tracker endpoint '{self.events_endpoint}': {e}")
+            return True, None
 
     def intercept_substitution(
         self,
@@ -33,84 +67,35 @@ class GovernanceInterceptor:
         reason: str,
         agent_id: str,
         session_id: str,
+        timestamp: Optional[datetime] = None,
         metadata: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        """
-        Detects model substitution and records it to the tracker.
-        
-        :param requested_model: Model requested by client (e.g. 'gpt-4')
-        :param actual_model: Model selected by gateway (e.g. 'gpt-4o-mini')
-        :param reason: Reason for substitution ('cost', 'availability', 'policy')
-        :param agent_id: ID of the invoking agent (e.g. 'HR-Agent')
-        :param session_id: Session ID of the request
-        :param metadata: Extra context metadata
-        :return: Result dict with status and event data
-        """
-        # If model requested matches actual model, no substitution occurred.
-        if requested_model == actual_model:
-            return {
-                "substituted": False,
-                "recorded": False,
-                "reason": "Model requested matches actual model."
-            }
+    ) -> Tuple[bool, Optional[Dict[str, Any]]]:
+        """Backward compatibility alias for intercept()."""
+        return self.intercept(
+            requested_model=requested_model,
+            actual_model=actual_model,
+            reason=reason,
+            agent_id=agent_id,
+            session_id=session_id,
+            timestamp=timestamp
+        )
 
-        payload = {
-            "requested_model": requested_model,
-            "actual_model": actual_model,
-            "reason": reason.lower(),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "agent_id": agent_id,
-            "session_id": session_id,
-            "metadata": metadata or {}
-        }
-
-        return self._send_event(payload)
-
-    def _send_event(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        endpoint = f"{self.tracker_url}/events"
-        headers = {
-            "Content-Type": "application/json"
-        }
-        if self.api_key:
-            headers["Authorization"] = f"Bearer {self.api_key}"
-
-        data = json.dumps(payload).encode('utf-8')
-        req = urllib.request.Request(endpoint, data=data, headers=headers, method="POST")
-
-        try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                resp_data = json.loads(resp.read().decode('utf-8'))
-                return {
-                    "substituted": True,
-                    "recorded": True,
-                    "event": resp_data
-                }
-        except Exception as e:
-            msg = f"Failed to record substitution event to tracker: {e}"
-            logger.error(msg)
-            if not self.fail_silently:
-                raise RuntimeError(msg) from e
-            return {
-                "substituted": True,
-                "recorded": False,
-                "error": str(e),
-                "payload": payload
-            }
-
-    def wrap_gateway_router(self, route_fn: Callable) -> Callable:
-        """
-        Decorator for gateway routing functions.
-        Expects route_fn to return a tuple or dict containing (requested_model, actual_model, reason, agent_id, session_id).
-        """
-        def wrapper(*args, **kwargs):
-            result = route_fn(*args, **kwargs)
-            if isinstance(result, dict):
-                req_model = result.get("requested_model")
-                act_model = result.get("actual_model")
-                reason = result.get("reason", "unknown")
-                agent_id = result.get("agent_id", "default_agent")
-                session_id = result.get("session_id", "default_session")
-                if req_model and act_model:
-                    self.intercept_substitution(req_model, act_model, reason, agent_id, session_id)
-            return result
-        return wrapper
+def intercept_gateway_decision(
+    requested_model: str,
+    actual_model: str,
+    reason: str,
+    agent_id: str,
+    session_id: str,
+    tracker_url: Optional[str] = None,
+    api_key: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    """Helper wrapper function for single-line gateway integration."""
+    interceptor = GovernanceInterceptor(tracker_url=tracker_url, api_key=api_key)
+    _, event = interceptor.intercept(
+        requested_model=requested_model,
+        actual_model=actual_model,
+        reason=reason,
+        agent_id=agent_id,
+        session_id=session_id
+    )
+    return event
