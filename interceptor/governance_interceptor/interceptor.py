@@ -1,3 +1,4 @@
+import os
 import requests
 import logging
 from typing import Optional, Dict, Any, Tuple
@@ -6,11 +7,11 @@ from datetime import datetime, timezone
 logger = logging.getLogger("GovernanceInterceptor")
 
 class GovernanceInterceptor:
-    def __init__(self, tracker_url: str = "http://localhost:8000", api_key: Optional[str] = None):
-        self.tracker_url = tracker_url.rstrip("/")
-        # Target versioned API endpoint
+    def __init__(self, tracker_url: Optional[str] = None, api_key: Optional[str] = None):
+        target_url = tracker_url or os.getenv("TRACKER_URL") or "https://model-substitution-governance-event.onrender.com"
+        self.tracker_url = target_url.rstrip("/")
         self.events_endpoint = f"{self.tracker_url}/api/v1/events"
-        self.api_key = api_key
+        self.api_key = api_key or os.getenv("API_KEY") or os.getenv("GOVERNANCE_API_KEY")
 
     def intercept(
         self,
@@ -43,10 +44,11 @@ class GovernanceInterceptor:
 
         headers = {"Content-Type": "application/json"}
         if self.api_key:
+            headers["X-API-Key"] = self.api_key
             headers["Authorization"] = f"Bearer {self.api_key}"
 
         try:
-            response = requests.post(self.events_endpoint, json=payload, headers=headers, timeout=3.5)
+            response = requests.post(self.events_endpoint, json=payload, headers=headers, timeout=5.0)
             if response.status_code in [200, 201]:
                 event_data = response.json()
                 logger.info(f"✅ Governance event recorded (ID: {event_data.get('id')}, Risk: {event_data.get('risk_level')}, Flagged: {event_data.get('compliance_flagged')})")
@@ -64,10 +66,11 @@ def intercept_gateway_decision(
     reason: str,
     agent_id: str,
     session_id: str,
-    tracker_url: str = "http://localhost:8000"
+    tracker_url: Optional[str] = None,
+    api_key: Optional[str] = None
 ) -> Optional[Dict[str, Any]]:
     """Helper wrapper function for single-line gateway integration."""
-    interceptor = GovernanceInterceptor(tracker_url=tracker_url)
+    interceptor = GovernanceInterceptor(tracker_url=tracker_url, api_key=api_key)
     _, event = interceptor.intercept(
         requested_model=requested_model,
         actual_model=actual_model,

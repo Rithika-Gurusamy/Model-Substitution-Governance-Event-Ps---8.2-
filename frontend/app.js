@@ -102,12 +102,52 @@ document.addEventListener('DOMContentLoaded', () => {
     initTabNavigation();
     initFilterListeners();
     initModalListeners();
+    initApiKeyListeners();
     initSimulator();
     initAuditButton();
     
     // Initial Auth Session Check
     checkAuthSession();
 });
+
+function initApiKeyListeners() {
+    const copyBtn = document.getElementById('btn-copy-api-key');
+    const regenBtn = document.getElementById('btn-regen-api-key');
+
+    copyBtn?.addEventListener('click', async () => {
+        const cachedKey = localStorage.getItem('governance_active_api_key');
+        const textToCopy = cachedKey || document.getElementById('api-key-text')?.innerText || '';
+        try {
+            await navigator.clipboard.writeText(textToCopy);
+            copyBtn.innerText = 'Copied!';
+            setTimeout(() => { copyBtn.innerText = 'Copy Key'; }, 2000);
+        } catch (e) {
+            alert('API Key: ' + textToCopy);
+        }
+    });
+
+    regenBtn?.addEventListener('click', async () => {
+        if (!confirm('Are you sure you want to regenerate your API key? Any SDK using the old key will stop sending events.')) return;
+        try {
+            const res = await fetchWithAuth(`${APP_CONFIG.RENDER_API_BASE}/auth/api-key/regenerate`, { method: 'POST' });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.api_key) {
+                    localStorage.setItem('governance_active_api_key', data.api_key);
+                    document.getElementById('api-key-text').innerText = data.api_key;
+                    document.getElementById('api-key-full-secret').innerText = data.api_key;
+                    document.getElementById('api-key-new-alert').style.display = 'block';
+                    try { await navigator.clipboard.writeText(data.api_key); } catch(e){}
+                    fetchUserApiKey();
+                }
+            } else {
+                alert('Failed to regenerate API key.');
+            }
+        } catch (err) {
+            alert('Regenerate Error: ' + err.message);
+        }
+    });
+}
 
 // Supabase & Backend Auth Session Check
 async function checkAuthSession() {
@@ -145,12 +185,9 @@ function showDashboardView(userObj = null) {
 
     if (userObj) {
         currentUserName = userObj.full_name || "Account User";
-        currentOrgName = userObj.organization_name || `${currentUserName}'s Workspace`;
         document.getElementById('header-user-name').innerText = currentUserName;
-        document.getElementById('header-org-name').innerText = currentOrgName;
     } else {
         document.getElementById('header-user-name').innerText = "Demo Visitor";
-        document.getElementById('header-org-name').innerText = "Hackathon Demo Org";
     }
 
     loadAllData();
@@ -198,6 +235,9 @@ function initAuthLanding() {
                 const data = await res.json();
                 localStorage.setItem('governance_auth_token', data.access_token);
                 localStorage.setItem('governance_user_profile', JSON.stringify(data.user));
+                if (data.api_key) {
+                    localStorage.setItem('governance_active_api_key', data.api_key);
+                }
                 showDashboardView(data.user);
                 return;
             }
@@ -211,8 +251,7 @@ function initAuthLanding() {
                 errDiv.style.display = 'block';
             } else {
                 const userObj = {
-                    full_name: data.session.user.user_metadata?.full_name || email.split('@')[0],
-                    organization_name: `${email.split('@')[0]}'s Workspace`
+                    full_name: data.session.user.user_metadata?.full_name || email.split('@')[0]
                 };
                 localStorage.setItem('governance_user_profile', JSON.stringify(userObj));
                 showDashboardView(userObj);
@@ -245,6 +284,9 @@ function initAuthLanding() {
                 const data = await res.json();
                 localStorage.setItem('governance_auth_token', `user_token_${data.user.id}`);
                 localStorage.setItem('governance_user_profile', JSON.stringify(data.user));
+                if (data.api_key) {
+                    localStorage.setItem('governance_active_api_key', data.api_key);
+                }
                 showDashboardView(data.user);
                 return;
             } else {
@@ -269,7 +311,7 @@ function initAuthLanding() {
                 errDiv.innerText = error.message;
                 errDiv.style.display = 'block';
             } else {
-                const userObj = { full_name: fullName, organization_name: `${fullName}'s Workspace` };
+                const userObj = { full_name: fullName };
                 localStorage.setItem('governance_user_profile', JSON.stringify(userObj));
                 showDashboardView(userObj);
             }
@@ -280,6 +322,7 @@ function initAuthLanding() {
     document.getElementById('btn-guest-demo')?.addEventListener('click', () => {
         localStorage.removeItem('governance_auth_token');
         localStorage.removeItem('governance_user_profile');
+        localStorage.removeItem('governance_active_api_key');
         showDashboardView();
     });
 
@@ -287,6 +330,7 @@ function initAuthLanding() {
     document.getElementById('btn-logout')?.addEventListener('click', async () => {
         localStorage.removeItem('governance_auth_token');
         localStorage.removeItem('governance_user_profile');
+        localStorage.removeItem('governance_active_api_key');
         if (supabaseClient) {
             await supabaseClient.auth.signOut();
         }
@@ -297,6 +341,7 @@ function initAuthLanding() {
 // Fetch & Load All Data
 async function loadAllData() {
     await fetchUserProfile();
+    await fetchUserApiKey();
     await Promise.all([
         fetchEvents(),
         fetchModels(),
@@ -309,16 +354,33 @@ async function fetchUserProfile() {
         const res = await fetchWithAuth(`${APP_CONFIG.RENDER_API_BASE}/auth/me`);
         if (res.ok) {
             const profile = await res.json();
-            if (profile.organization_name) {
-                currentOrgName = profile.organization_name;
-                document.getElementById('header-org-name').innerText = currentOrgName;
-            }
             if (profile.full_name) {
                 document.getElementById('header-user-name').innerText = profile.full_name;
             }
         }
     } catch (e) {
         console.warn("User profile fetch error:", e);
+    }
+}
+
+async function fetchUserApiKey() {
+    try {
+        const cachedKey = localStorage.getItem('governance_active_api_key');
+        const res = await fetchWithAuth(`${APP_CONFIG.RENDER_API_BASE}/auth/api-key`);
+        if (res.ok) {
+            const data = await res.json();
+            const keyText = cachedKey || (data.key_prefix ? `${data.key_prefix}••••••••••••` : 'usr_live_demo_key');
+            
+            const keyTextElem = document.getElementById('api-key-text');
+            if (keyTextElem) keyTextElem.innerText = keyText;
+
+            const step3Box = document.getElementById('step3-config-box');
+            if (step3Box) {
+                step3Box.innerText = `TRACKER_URL="https://model-substitution-governance-event.onrender.com"\nAPI_KEY="${cachedKey || (data.key_prefix ? data.key_prefix + '...' : 'usr_live_your_api_key_here')}"`;
+            }
+        }
+    } catch (e) {
+        console.warn("API Key fetch error:", e);
     }
 }
 

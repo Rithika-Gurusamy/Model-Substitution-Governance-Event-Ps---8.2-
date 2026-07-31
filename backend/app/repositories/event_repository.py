@@ -20,7 +20,7 @@ class EventRepository:
         context_downgrade_pct: float,
         compliance_flagged: bool,
         compliance_reason: Optional[str] = None,
-        organization_id: Optional[str] = None,
+        user_profile_id: Optional[str] = None,
         timestamp: Optional[datetime] = None
     ) -> GovernanceEvent:
         event = GovernanceEvent(
@@ -34,7 +34,7 @@ class EventRepository:
             context_downgrade_pct=context_downgrade_pct,
             compliance_flagged=compliance_flagged,
             compliance_reason=compliance_reason,
-            organization_id=organization_id,
+            user_profile_id=user_profile_id,
         )
         if timestamp:
             event.timestamp = timestamp
@@ -55,14 +55,14 @@ class EventRepository:
         compliance_flagged: Optional[bool] = None,
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
-        organization_id: Optional[str] = None,
+        user_profile_id: Optional[str] = None,
         limit: int = 100,
         offset: int = 0
     ) -> List[GovernanceEvent]:
         query = self.db.query(GovernanceEvent)
 
-        if organization_id:
-            query = query.filter(GovernanceEvent.organization_id == organization_id)
+        if user_profile_id:
+            query = query.filter(GovernanceEvent.user_profile_id == user_profile_id)
         if agent_id:
             query = query.filter(GovernanceEvent.agent_id == agent_id)
         if reason:

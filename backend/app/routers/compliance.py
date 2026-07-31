@@ -14,7 +14,7 @@ def get_retroactive_compliance_audit(
     auth_data: Tuple[Optional[UserProfile], str] = Depends(get_current_user_and_org),
     db: Session = Depends(get_db)
 ):
-    _, org_id = auth_data
+    _, user_profile_id = auth_data
     engine = ComplianceEngine(db)
-    report = engine.run_retroactive_audit(organization_id=org_id)
+    report = engine.run_retroactive_audit(user_profile_id=user_profile_id)
     return report

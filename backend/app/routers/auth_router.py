@@ -1,11 +1,12 @@
 import uuid
 import hashlib
-from typing import Optional
+from typing import Optional, Tuple
 from pydantic import BaseModel, EmailStr
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from backend.app.database import get_db
-from backend.app.models.models import Organization, UserProfile
+from backend.app.models.models import UserProfile, ApiKey
+from backend.app.auth import get_current_user_and_org, generate_api_key_for_user
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -18,9 +19,6 @@ class DirectLoginRequest(BaseModel):
     email: str
     password: str
 
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode('utf-8')).hexdigest()
-
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
 def direct_signup(payload: DirectSignupRequest, db: Session = Depends(get_db)):
     email_clean = payload.email.strip().lower()
@@ -30,34 +28,30 @@ def direct_signup(payload: DirectSignupRequest, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=400, detail="An account with this email already exists. Please log in.")
 
-    # Create Organization for user (Per-user Workspace)
-    org_name = f"{payload.full_name.strip()}'s Workspace"
-    org = Organization(id=str(uuid.uuid4()), organization_name=org_name)
-    db.add(org)
-    db.commit()
-    db.refresh(org)
-
-    # Create User Profile (storing hashed password for fallback verification)
+    # Create User Profile
     user_profile = UserProfile(
         id=str(uuid.uuid4()),
         auth_user_id=email_clean,
-        organization_id=org.id,
         full_name=payload.full_name.strip(),
-        role="Admin"
+        role="User"
     )
     db.add(user_profile)
     db.commit()
     db.refresh(user_profile)
 
+    # Auto-generate Developer API Key for SDK integration
+    raw_api_key = generate_api_key_for_user(user_profile.id, db)
+
     return {
         "status": "success",
         "message": "Account created successfully!",
+        "access_token": f"user_token_{user_profile.id}",
+        "api_key": raw_api_key,
         "user": {
             "id": user_profile.id,
             "email": email_clean,
             "full_name": user_profile.full_name,
-            "organization_id": org.id,
-            "organization_name": org.organization_name
+            "role": user_profile.role
         }
     }
 
@@ -69,17 +63,62 @@ def direct_login(payload: DirectLoginRequest, db: Session = Depends(get_db)):
     if not user_profile:
         raise HTTPException(status_code=401, detail="Invalid email or password. Please check your credentials or create an account.")
 
-    org = db.query(Organization).filter(Organization.id == user_profile.organization_id).first()
-    org_name = org.organization_name if org else "Workspace"
+    # Fetch or generate API Key for user
+    api_key_obj = db.query(ApiKey).filter(ApiKey.user_profile_id == user_profile.id).order_by(ApiKey.created_at.desc()).first()
+    raw_api_key = None
+    key_prefix = api_key_obj.key_prefix if api_key_obj else None
+    if not api_key_obj:
+        raw_api_key = generate_api_key_for_user(user_profile.id, db)
+        key_prefix = raw_api_key[:12]
 
     return {
         "status": "success",
         "access_token": f"user_token_{user_profile.id}",
+        "api_key": raw_api_key,
+        "key_prefix": key_prefix,
         "user": {
             "id": user_profile.id,
             "email": email_clean,
             "full_name": user_profile.full_name,
-            "organization_id": user_profile.organization_id,
-            "organization_name": org_name
+            "role": user_profile.role
         }
+    }
+
+@router.get("/api-key")
+def get_user_api_key(
+    auth_data: Tuple[Optional[UserProfile], str] = Depends(get_current_user_and_org),
+    db: Session = Depends(get_db)
+):
+    user_profile, user_profile_id = auth_data
+    key_obj = db.query(ApiKey).filter(ApiKey.user_profile_id == user_profile_id).order_by(ApiKey.created_at.desc()).first()
+    if not key_obj:
+        raw_key = generate_api_key_for_user(user_profile_id, db)
+        return {
+            "key_prefix": raw_key[:12],
+            "api_key": raw_key,
+            "created_at": None
+        }
+    return {
+        "key_prefix": key_obj.key_prefix,
+        "api_key": None, # Unhashed raw secret only shown when newly created or regenerated
+        "created_at": key_obj.created_at
+    }
+
+@router.post("/api-key/regenerate")
+def regenerate_api_key(
+    auth_data: Tuple[Optional[UserProfile], str] = Depends(get_current_user_and_org),
+    db: Session = Depends(get_db)
+):
+    user_profile, user_profile_id = auth_data
+    # Delete old API keys for this user profile
+    db.query(ApiKey).filter(ApiKey.user_profile_id == user_profile_id).delete()
+    db.commit()
+
+    # Generate new key
+    raw_api_key = generate_api_key_for_user(user_profile_id, db)
+    return {
+        "status": "success",
+        "message": "New API Key generated successfully! Update your SDK configuration.",
+        "api_key": raw_api_key,
+        "key_prefix": raw_api_key[:12]
     }

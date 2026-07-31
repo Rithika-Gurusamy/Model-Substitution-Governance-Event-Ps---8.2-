@@ -18,7 +18,7 @@ def record_substitution_event(
     auth_data: Tuple[Optional[UserProfile], str] = Depends(get_current_user_and_org),
     db: Session = Depends(get_db)
 ):
-    _, org_id = auth_data
+    _, user_profile_id = auth_data
     risk_assessor = RiskAssessor(db)
     compliance_engine = ComplianceEngine(db)
     event_repo = EventRepository(db)
@@ -29,14 +29,14 @@ def record_substitution_event(
         payload.actual_model
     )
 
-    # 2. Evaluate Agent Compliance Whitelist for Organization
+    # 2. Evaluate Agent Compliance Whitelist for User Profile
     compliance_flagged, compliance_reason = compliance_engine.evaluate_compliance(
         payload.agent_id,
         payload.actual_model,
-        organization_id=org_id
+        user_profile_id=user_profile_id
     )
 
-    # 3. Persist Governance Event Record under Organization
+    # 3. Persist Governance Event Record under User Profile
     event = event_repo.create(
         requested_model=payload.requested_model,
         actual_model=payload.actual_model,
@@ -48,7 +48,7 @@ def record_substitution_event(
         context_downgrade_pct=downgrade_pct,
         compliance_flagged=compliance_flagged,
         compliance_reason=compliance_reason,
-        organization_id=org_id,
+        user_profile_id=user_profile_id,
         timestamp=payload.timestamp
     )
 
@@ -67,7 +67,7 @@ def query_events(
     auth_data: Tuple[Optional[UserProfile], str] = Depends(get_current_user_and_org),
     db: Session = Depends(get_db)
 ):
-    _, org_id = auth_data
+    _, user_profile_id = auth_data
     event_repo = EventRepository(db)
     return event_repo.filter_events(
         agent_id=agent_id,
@@ -76,7 +76,7 @@ def query_events(
         compliance_flagged=compliance_flagged,
         start_time=start_time,
         end_time=end_time,
-        organization_id=org_id,
+        user_profile_id=user_profile_id,
         limit=limit,
         offset=offset
     )

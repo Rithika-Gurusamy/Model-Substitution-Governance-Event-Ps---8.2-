@@ -2,17 +2,12 @@ from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
 
-# Organization & Profile Schemas
-class OrganizationResponse(BaseModel):
-    id: str
-    organization_name: str
-    created_at: datetime
-    model_config = ConfigDict(from_attributes=True)
-
+# User Profile Schemas
 class UserProfileResponse(BaseModel):
     id: str
     auth_user_id: str
-    organization_id: str
+    organization_id: Optional[str] = None
+    user_profile_id: Optional[str] = None
     full_name: str
     role: str
     organization_name: Optional[str] = None
@@ -21,11 +16,11 @@ class UserProfileResponse(BaseModel):
 
 # Event Schemas
 class SubstitutionEventCreate(BaseModel):
-    requested_model: str = Field(..., example="GPT-5")
-    actual_model: str = Field(..., example="GPT-4o Mini")
-    reason: str = Field(..., example="cost", description="cost, availability, or policy")
-    agent_id: str = Field(..., example="HR-Agent")
-    session_id: str = Field(..., example="sess-9912")
+    requested_model: str = Field(..., json_schema_extra={"example": "GPT-5"})
+    actual_model: str = Field(..., json_schema_extra={"example": "GPT-4o Mini"})
+    reason: str = Field(..., json_schema_extra={"example": "cost"}, description="cost, availability, or policy")
+    agent_id: str = Field(..., json_schema_extra={"example": "HR-Agent"})
+    session_id: str = Field(..., json_schema_extra={"example": "sess-9912"})
     timestamp: Optional[datetime] = None
 
 class GovernanceEventResponse(BaseModel):
@@ -40,6 +35,7 @@ class GovernanceEventResponse(BaseModel):
     context_downgrade_pct: float
     compliance_flagged: bool
     compliance_reason: Optional[str] = None
+    user_profile_id: Optional[str] = None
     organization_id: Optional[str] = None
     timestamp: datetime
 
@@ -62,6 +58,7 @@ class AgentResponse(BaseModel):
     agent_id: str
     agent_name: str
     description: Optional[str] = None
+    user_profile_id: Optional[str] = None
     organization_id: Optional[str] = None
     approved_models: List[str]
 

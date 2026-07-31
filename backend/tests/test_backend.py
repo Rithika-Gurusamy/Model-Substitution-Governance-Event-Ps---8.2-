@@ -63,3 +63,34 @@ def test_retroactive_compliance_audit():
     assert "total_events_analyzed" in data
     assert "total_unapproved_requests" in data
     assert "compliance_flag_rate_pct" in data
+
+def test_api_key_auth_and_user_isolation():
+    # 1. Sign up user
+    signup_res = client.post("/api/v1/auth/signup", json={
+        "full_name": "Test User",
+        "email": "testuser@example.com",
+        "password": "Password123!"
+    })
+    assert signup_res.status_code == 201
+    signup_data = signup_res.json()
+    api_key = signup_data["api_key"]
+    assert api_key.startswith("usr_live_")
+
+    # 2. Record event using X-API-Key header
+    payload = {
+        "requested_model": "GPT-5",
+        "actual_model": "GPT-4o Mini",
+        "reason": "cost",
+        "agent_id": "Doc-Agent",
+        "session_id": "isolated-session-100"
+    }
+    event_res = client.post("/api/v1/events", json=payload, headers={"X-API-Key": api_key})
+    assert event_res.status_code == 201
+
+    # 3. Query events using user token -> user sees their isolated event
+    token = signup_data["access_token"]
+    user_events_res = client.get("/api/v1/events", headers={"Authorization": f"Bearer {token}"})
+    assert user_events_res.status_code == 200
+    user_events = user_events_res.json()
+    assert len(user_events) == 1
+    assert user_events[0]["session_id"] == "isolated-session-100"

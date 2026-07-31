@@ -11,24 +11,33 @@ from backend.app.routers import health, events, compliance, models_and_agents, a
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Create DB tables
+    # 1. Create DB tables via SQLAlchemy Metadata
     Base.metadata.create_all(bind=engine)
 
-    # 2. Additive Schema Migration: Ensure organization_id columns exist on agents & governance_events tables
+    # 2. Additive DDL Schema Migration: Ensure user_profile_id columns & api_keys table exist
     try:
         with engine.connect() as conn:
-            conn.execute(text("ALTER TABLE agents ADD COLUMN IF NOT EXISTS organization_id VARCHAR;"))
-            conn.execute(text("ALTER TABLE governance_events ADD COLUMN IF NOT EXISTS organization_id VARCHAR;"))
+            conn.execute(text("ALTER TABLE agents ADD COLUMN IF NOT EXISTS user_profile_id VARCHAR;"))
+            conn.execute(text("ALTER TABLE governance_events ADD COLUMN IF NOT EXISTS user_profile_id VARCHAR;"))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS api_keys (
+                    id VARCHAR PRIMARY KEY,
+                    key_prefix VARCHAR(12) NOT NULL,
+                    key_hash VARCHAR(64) NOT NULL UNIQUE,
+                    user_profile_id VARCHAR NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE
+                );
+            """))
             conn.commit()
-            print("Database schema migration: organization_id columns verified.")
+            print("Database schema migration: user_profile_id columns & api_keys table verified.")
     except Exception as e:
         print(f"Notice: Schema migration check: {e}")
 
-    # 3. Seed Database with models, agents, policies, and initial demo events
+    # 3. Seed Database with models, agents, policies, and demo events
     try:
         db = next(get_db())
         seed_database(db)
-        print("Database seeded successfully with model profiles, agents, and demo events.")
+        print("Database seeded successfully with model profiles, agents, and demo user data.")
     except Exception as e:
         print(f"Warning: Seed database error: {e}")
 

@@ -9,8 +9,8 @@ class ComplianceEngine:
         self.agent_repo = AgentRepository(db)
         self.event_repo = EventRepository(db)
 
-    def evaluate_compliance(self, agent_id: str, actual_model: str, organization_id: Optional[str] = None) -> Tuple[bool, Optional[str]]:
-        approved_models = self.agent_repo.get_approved_models_for_agent(agent_id, organization_id)
+    def evaluate_compliance(self, agent_id: str, actual_model: str, user_profile_id: Optional[str] = None) -> Tuple[bool, Optional[str]]:
+        approved_models = self.agent_repo.get_approved_models_for_agent(agent_id, user_profile_id)
         
         if not approved_models:
             return False, None
@@ -22,8 +22,8 @@ class ComplianceEngine:
             reason = f"COMPLIANCE VIOLATION: Substituted model '{actual_model}' is not in approved list for agent '{agent_id}' ({approved_str})."
             return True, reason
 
-    def run_retroactive_audit(self, organization_id: Optional[str] = None) -> Dict[str, Any]:
-        events = self.event_repo.filter_events(limit=1000, organization_id=organization_id)
+    def run_retroactive_audit(self, user_profile_id: Optional[str] = None) -> Dict[str, Any]:
+        events = self.event_repo.filter_events(limit=1000, user_profile_id=user_profile_id)
         total_events = len(events)
 
         if total_events == 0:
