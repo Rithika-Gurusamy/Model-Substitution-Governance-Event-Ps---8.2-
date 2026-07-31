@@ -12,6 +12,7 @@ class UserProfile(Base):
 
     id = Column(String, primary_key=True, default=generate_uuid)
     auth_user_id = Column(String(255), nullable=False, index=True)
+    organization_id = Column(String, nullable=True)
     full_name = Column(String(255), nullable=False)
     role = Column(String(50), default="User")
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -50,6 +51,7 @@ class Agent(Base):
     agent_id = Column(String, index=True, nullable=False)
     agent_name = Column(String, nullable=False)
     description = Column(String, nullable=True)
+    organization_id = Column(String, nullable=True)
     user_profile_id = Column(String, ForeignKey("user_profiles.id", ondelete="CASCADE"), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
@@ -83,6 +85,7 @@ class GovernanceEvent(Base):
     compliance_flagged = Column(Boolean, default=False, index=True)
     compliance_reason = Column(Text, nullable=True)
 
+    organization_id = Column(String, nullable=True)
     user_profile_id = Column(String, ForeignKey("user_profiles.id", ondelete="CASCADE"), nullable=True)
     timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
 
