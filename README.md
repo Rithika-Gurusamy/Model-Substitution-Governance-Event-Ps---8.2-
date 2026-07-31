@@ -1,73 +1,231 @@
-# Model Substitution Governance Tracker
+# Model Substitution Governance & Audit Platform
 
-An enterprise AI governance platform for monitoring, recording, risk assessing, and auditing LLM Gateway model substitutions.
+> **Real-Time Monitoring, Capability Risk Assessment, and Compliance Auditing for Dynamic LLM Gateway Model Routing.**
 
-## Architecture Overview
+---
 
+## 🌐 Live Production Links
+
+* 🖥️ **Live Web Dashboard**: [model-substitution-governance-event.vercel.app](https://model-substitution-governance-event.vercel.app)
+* ⚙️ **Cloud API Engine**: [model-substitution-governance-event.onrender.com](https://model-substitution-governance-event.onrender.com)
+* 📖 **OpenAPI / Swagger Specs**: [model-substitution-governance-event.onrender.com/docs](https://model-substitution-governance-event.onrender.com/docs)
+* 📦 **SDK GitHub Release**: [v1.0.0 Release Package](https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-/releases/download/v1.0.0/governance-interceptor-v1.0.0.zip)
+
+---
+
+## 📌 Executive Summary
+
+Modern AI applications use **LLM Gateways** (such as LiteLLM, Portkey, or custom routing services) to dynamically route prompt requests based on cost, latency, or rate limits. When a high-capability model (e.g., `GPT-4o` or `Claude 3.5 Sonnet`) is swapped for a smaller model (e.g., `Gemini 1.5 Flash` or `GPT-4o Mini`), **silent model substitutions** occur.
+
+Without governance tracking:
+* **Context Degradation**: Shrinking context windows (e.g., 200k tokens down to 128k) cause subtle reasoning failures or truncation in multi-turn workflows.
+* **Compliance & Policy Violations**: AI agents may route prompts to unapproved or non-whitelisted model providers in regulated environments (e.g., HIPAA, SOC2, GDPR).
+* **Zero Visibility**: Gateway administrators have no unified audit trail mapping requested vs. actual models used across organizational teams.
+
+This platform provides a complete governance solution: a **Zero-Latency Interceptor SDK**, a **FastAPI Cloud Backend**, a **PostgreSQL (Supabase) Database**, and a real-time **Vercel Interactive Dashboard**.
+
+---
+
+## ✨ Key Features & Capabilities
+
+* **⚡ Zero-Latency Interceptor SDK (`governance_interceptor`)**:
+  - Intercepts gateway routing decisions in memory.
+  - Automatically compares `requested_model` vs. `actual_model`.
+  - Sends non-blocking background HTTP requests to the cloud tracker without slowing down LLM response streaming.
+
+* **⚖️ Capability Risk Assessor Engine**:
+  - Evaluates original vs. substituted model capability profiles (Context Window size, Max Output Tokens, Provider tier).
+  - Automatically calculates context downgrade % and assigns risk severity ratings (**LOW**, **MEDIUM**, **HIGH**, **CRITICAL**).
+
+* **🚨 Agent Compliance & Whitelist Engine**:
+  - Enforces strict per-agent model whitelists.
+  - Instantly flags unauthorized model substitutions (e.g., if a `Finance-Agent` is restricted to OpenAI but routed to an external provider).
+
+* **📜 Retroactive Compliance Audit Engine**:
+  - Performs batch compliance audits across historical log data.
+  - Computes organizational flag rates, high-risk exposure percentages, and unapproved request metrics.
+
+* **🔒 Multi-Tenant Data Isolation & API Security**:
+  - Secure account isolation using **Supabase JWT authentication** and **Hashed Developer API Keys** (`usr_live_...`).
+  - Automatic database-level scoping ensuring users only access their own organization's logs and agents.
+
+* **🎮 Interactive Live Simulator ("Try Demo")**:
+  - Built-in live traffic simulator allowing prospective users and evaluators to trigger simulated gateway model substitutions with 1-click visual feedback and hand-pointer guidance (`👉`).
+
+---
+
+## 🔄 System Architecture & Workflow
+
+```text
++-----------------------------------------------------------------------------------+
+|                            CLIENT APPLICATION / AI AGENT                          |
+|  Sends prompt request specifying Target Requested Model (e.g., GPT-4o)            |
++-----------------------------------------------------------------------------------+
+                                         |
+                                         v
++-----------------------------------------------------------------------------------+
+|                              LLM GATEWAY ROUTER ENGINE                            |
+|  Evaluates routing rules (Cost budgets, availability, token length)               |
+|  Selects Actual Model to invoke (e.g., Gemini 1.5 Flash)                          |
++-----------------------------------------------------------------------------------+
+                                         |
+                                         v
++-----------------------------------------------------------------------------------+
+|                            GOVERNANCE INTERCEPTOR SDK                             |
+|  Checks if Requested Model != Actual Model Used                                   |
+|  Posts asynchronous HTTP event to Cloud Tracker with Developer API Key           |
++-----------------------------------------------------------------------------------+
+                                         |
+                                         v
++-----------------------------------------------------------------------------------+
+|                        FASTAPI CLOUD TRACKER ENGINE (Render)                       |
+|  1. Authenticates Developer API Key & resolves Organization Scope                 |
+|  2. Risk Assessor Engine calculates Context Downgrade % & Risk Level              |
+|  3. Compliance Engine verifies Agent Whitelist & flags policy violations           |
++-----------------------------------------------------------------------------------+
+                                         |
+                                         v
++-----------------------------------------------------------------------------------+
+|                         SUPABASE POSTGRESQL DATABASE                              |
+|  Persists structured event records, risk analytics, and compliance audit logs    |
++-----------------------------------------------------------------------------------+
+                                         |
+                                         v
++-----------------------------------------------------------------------------------+
+|                         VERCEL GOVERNANCE DASHBOARD UI                            |
+|  Displays real-time event logs, risk distribution matrices, and audit reports    |
++-----------------------------------------------------------------------------------+
 ```
-Developer / Gateway Admin
-       │
-       ▼
-GitHub Releases CDN (Global Distribution)
-       │
-       ├── Download Governance Interceptor SDK (v1.0.0)
-       ├── Download Sample Gateway (v1.0.0)
-       │
-       ▼
-Install into Enterprise LLM Gateway
-       │
-       ├── Routing Decision (Requested != Actual Model)
-       │
-       ▼
-Governance Tracker Cloud API (FastAPI on Render)
-       ├── Ingestion & Event Validation
-       ├── Context Window Risk Assessor Engine
-       ├── Agent Whitelist Compliance Engine
-       │
-       ▼
-PostgreSQL Database (Supabase)
-       │
-       ▼
-Enterprise Governance Dashboard (Vercel)
+
+---
+
+## 🚀 Quick Start & Local Setup
+
+### Prerequisites
+* **Python 3.10+**
+* **Pip** (Python Package Installer)
+* **PostgreSQL Database** (Supabase or Local Postgres)
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-.git
+cd Model-Substitution-Governance-Event
 ```
 
-## SDK Distribution
+### 2. Set Up Python Virtual Environment
+```bash
+python -m venv venv
+# On Windows:
+venv\Scripts\activate
+# On Linux/macOS:
+source venv/bin/activate
+```
 
-The **Governance Interceptor SDK** is distributed via **GitHub Releases**.
+### 3. Install Dependencies
+```bash
+pip install -r backend/requirements.txt
+```
 
-### Why GitHub Releases?
-- **Global CDN**: Instant artifact downloads without backend cold starts.
-- **Versioned Releases**: Clean enterprise release management (`v1.0.0`, `v1.1.0`).
-- **Separation of Responsibilities**: The FastAPI cloud backend is reserved exclusively for high-throughput governance APIs.
+### 4. Configure Environment Variables
+Create a `.env` file in the project root:
+```env
+DATABASE_URL="postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres"
+SUPABASE_URL="https://[YOUR_PROJECT_REF].supabase.co"
+SUPABASE_ANON_KEY="your-supabase-anon-key"
+SUPABASE_JWT_SECRET="your-supabase-jwt-secret"
+SECRET_KEY="your-backend-secret-key"
+```
 
-## Installation
+### 5. Run the Cloud Backend Server
+```bash
+uvicorn backend.app.main:app --reload --port 8000
+```
+* Interactive Swagger OpenAPI documentation will be live at: `http://localhost:8000/docs`
 
+### 6. Launch the Dashboard
+Open `frontend/index.html` directly in your browser, or serve it using any HTTP server:
+```bash
+python -m http.server 3000 --directory frontend
+```
+Navigate to `http://localhost:3000`.
+
+---
+
+## 📁 Repository & Project Structure
+
+Below is a guide to the project layout:
+
+```text
+Model-Substitution-Governance-Event/
+├── backend/                             # FastAPI Backend Engine
+│   ├── app/
+│   │   ├── auth.py                      # API Key Verification & Supabase JWT Auth Middleware
+│   │   ├── config.py                    # Environment Configuration Settings
+│   │   ├── database.py                  # SQLAlchemy Supabase PostgreSQL Session Manager
+│   │   ├── main.py                      # FastAPI App Initialization, CORS & DDL Migrations
+│   │   ├── models.py                    # SQLAlchemy ORM Schemas (Events, Agents, Model Profiles)
+│   │   ├── schemas.py                   # Pydantic Request & Response Data Transfer Objects
+│   │   ├── routers/
+│   │   │   ├── auth_router.py           # Developer API Key & User Auth Endpoints
+│   │   │   ├── compliance.py            # Retroactive Compliance Audit & Whitelist Endpoints
+│   │   │   ├── events.py                # High-Throughput Event Ingestion & Search Endpoints
+│   │   │   ├── models.py                # Model Capability Reference Directory Endpoints
+│   │   │   └── statistics.py            # Executive KPI & Risk Matrix Aggregation Endpoints
+│   │   └── services/
+│   │       ├── compliance_service.py    # Agent Model Whitelist Verification Logic
+│   │       └── risk_engine.py           # Capability Context Window Downgrade Risk Algorithm
+│   └── requirements.txt                 # Python Production Backend Dependencies
+│
+├── frontend/                            # Single-Page Web Dashboard (Vanilla JS + Glassmorphism CSS)
+│   ├── app.js                           # Dashboard State, Charts, Data Fetching & Interactive Demo
+│   ├── config.js                        # Environment Base URLs (Render API Endpoint)
+│   ├── index.html                       # Dashboard Layout (Tabs, Modals, Integration Guides)
+│   └── styles.css                       # Modern Dark/Light Glassmorphism Design System
+│
+├── interceptor/                         # Lightweight Python SDK Package
+│   ├── governance_interceptor/
+│   │   ├── __init__.py                  # Package Exports
+│   │   └── interceptor.py               # GovernanceInterceptor SDK Implementation
+│   └── setup.py                         # PyPI & Pip Package Installer Setup
+│
+├── vercel.json                          # Vercel SPA Routing Configuration
+├── README.md                            # Project Overview & Setup Documentation
+└── governance-interceptor-v1.0.0.zip    # Standalone Interceptor SDK Distribution Archive
+```
+
+---
+
+## 💻 Interceptor SDK Integration
+
+Connecting your AI application or LLM Gateway to the Governance Tracker requires only **3 lines of code**:
+
+### Installation
 ```bash
 pip install governance-interceptor
 ```
 
-Or download release zip packages directly from GitHub Releases:
-- **SDK Package**: `governance-interceptor-v1.0.0.zip`
-- **Sample Gateway**: `sample-gateway-v1.0.0.zip`
-
-## Quick Start (Gateway Integration)
-
+### Usage
 ```python
+import os
 from governance_interceptor import GovernanceInterceptor
 
-interceptor = GovernanceInterceptor(tracker_url="https://model-substitution-governance-event.onrender.com")
+# 1. Initialize Interceptor (reads API_KEY and TRACKER_URL from environment)
+interceptor = GovernanceInterceptor(
+    tracker_url="https://model-substitution-governance-event.onrender.com",
+    api_key=os.getenv("API_KEY")
+)
 
-# After routing decision:
+# 2. Call interceptor after gateway model selection
 interceptor.intercept(
-    requested_model="GPT-5",
-    actual_model="GPT-4o Mini",
-    reason="cost",
-    agent_id="HR-Agent",
-    session_id="sess-101"
+    requested_model="GPT-4o",          # Model requested by client prompt
+    actual_model="Gemini 1.5 Flash",    # Actual model selected by LLM Gateway
+    reason="cost",                     # Routing reason: 'cost', 'availability', or 'policy'
+    agent_id="Financial-Analyzer",      # Identifier of calling agent
+    session_id="doc-proc-9902"          # Session / transaction reference ID
 )
 ```
 
-## Production Deployment URLs
-- **Enterprise Web Dashboard**: [https://model-substitution-governance-event.vercel.app](https://model-substitution-governance-event.vercel.app)
-- **FastAPI Cloud Backend**: [https://model-substitution-governance-event.onrender.com](https://model-substitution-governance-event.onrender.com)
-- **OpenAPI Swagger Specs**: [https://model-substitution-governance-event.onrender.com/docs](https://model-substitution-governance-event.onrender.com/docs)
+---
+
+## 📄 License
+Distributed under the **MIT License**. See `LICENSE` for details.
