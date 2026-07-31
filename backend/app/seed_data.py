@@ -98,6 +98,12 @@ SEED_AGENTS = [
         "agent_name": "Customer Care Support Router",
         "description": "Handles general customer care inquiries.",
         "approved_models": ["GPT-4o Mini", "GPT-3.5 Turbo", "Claude Haiku 3.5", "Gemini 1.5 Flash", "Llama 3.1 8B"]
+    },
+    {
+        "agent_id": "Document-Analyzer-Agent",
+        "agent_name": "AI Document Intelligence Assistant",
+        "description": "Enterprise PDF & Document Analysis Agent.",
+        "approved_models": ["Gemini 1.5 Flash", "Gemini 2.5 Pro", "GPT-4o", "Claude Sonnet 4"]
     }
 ]
 

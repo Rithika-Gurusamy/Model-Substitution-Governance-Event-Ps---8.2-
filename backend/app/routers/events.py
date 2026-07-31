@@ -29,11 +29,10 @@ def record_substitution_event(
         payload.actual_model
     )
 
-    # 2. Ensure Agent exists for User Profile
-    agent_repo = AgentRepository(db)
-    existing_agent = agent_repo.get_by_agent_id(payload.agent_id, user_profile_id)
-    if not existing_agent:
-        from backend.app.models.models import Agent
+    # 2. Ensure Agent exists in database to satisfy foreign key constraint
+    from backend.app.models.models import Agent
+    global_agent = db.query(Agent).filter(Agent.agent_id == payload.agent_id).first()
+    if not global_agent:
         new_agent = Agent(
             agent_id=payload.agent_id,
             agent_name=payload.agent_id.replace('-', ' '),
