@@ -792,7 +792,7 @@ interceptor = GovernanceInterceptor()</div>
     session_id="session-102"         # Session / document ID
 )</div>
                 </li>
-                <li>If <code>requested_model == actual_model</code>, the SDK automatically ignores it. If <code>requested_model != actual_model</code>, it captures and posts a Governance Event to Render!</li>
+                <li>If <code>requested_model == actual_model</code>, the SDK automatically ignores it. If <code>requested_model != actual_model</code>, it captures and posts a Governance Event to the Cloud Tracker!</li>
             </ol>
         `
     },

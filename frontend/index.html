@@ -95,7 +95,7 @@
                     </div>
                     <button class="btn btn-secondary text-sm" id="btn-refresh">Refresh</button>
                     <button class="btn btn-secondary text-sm" id="btn-logout">Logout</button>
-                    <button class="btn btn-accent text-sm" id="btn-open-sim">Gateway Simulator</button>
+                    <button class="btn btn-accent text-sm" id="btn-open-sim">Demo Gateway Simulator for LLM Substitutions</button>
                 </div>
             </div>
 
@@ -105,7 +105,6 @@
                 <button class="btn btn-secondary" id="btn-goto-integration">Integration Guide</button>
                 <a href="https://model-substitution-governance-event.onrender.com/docs" target="_blank" class="btn btn-secondary">API Documentation</a>
                 <a href="https://github.com/Rithika-Gurusamy/Model-Substitution-Governance-Event-Ps---8.2-.git" target="_blank" class="btn btn-secondary">GitHub Repository</a>
-                <button class="btn btn-secondary" id="btn-open-arch">Architecture</button>
             </div>
         </header>
 
@@ -498,41 +497,7 @@ Provider LLM API (OpenAI / Anthropic / Google Gemini)</div>
         </div>
     </div>
 
-    <!-- ARCHITECTURE MODAL -->
-    <div class="modal-backdrop" id="arch-modal">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3>Enterprise System Architecture</h3>
-                <button class="modal-close" id="arch-close-btn">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="arch-flow-box">
-User Signup / Login (Supabase Auth)
-       │
-       ├── JWT Session Token issued
-       │
-       ▼
-Enterprise Governance Dashboard (Vercel)
-       │
-       ├── Authorization: Bearer <Supabase JWT>
-       │
-       ▼
-Governance Tracker Cloud APIs (FastAPI on Render)
-       ├── Supabase JWT Validator
-       ├── User Profile -> Organization ID Resolver
-       ├── Organization Data Isolation Engine
-       │
-       ▼
-Supabase PostgreSQL Storage
-       ├── auth.users (Managed by Supabase Auth)
-       ├── user_profiles (auth_user_id -> organization_id)
-       ├── organizations (Multi-tenant org boundaries)
-       ├── agents & events (Scoped by organization_id)
-       └── model_profiles (GLOBAL - Reference directory)
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <!-- DETAILED DEVELOPER GUIDE MODAL -->
     <div class="modal-backdrop" id="dev-guide-modal">
